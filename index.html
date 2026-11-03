@@ -1,0 +1,2179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Sickos College Basketball</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Noto+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ── LIGHT MODE (default) ── */
+  :root {
+    --page-bg:  #ddb87a;
+    --bg:       #e8c98e;
+    --surface:  #f0d9a8;
+    --surface2: #f5e4be;
+    --border:   #c9a060;
+    --hdr:      #2a1f14;
+    --hdr-fg:   #f5e8d0;
+    --accent:   #c45508;
+    --accent2:  #a03800;
+    --text:     #2a1c08;
+    --muted:    #8a6535;
+    --green:    #2a6e2a;
+    --red:      #b83232;
+    --font-mono: 'Noto Sans Mono', monospace;
+    --font-body: 'Noto Sans', sans-serif;
+  }
+
+  /* ── DARK MODE ── */
+  body.dark {
+    --page-bg:  #1a1208;
+    --bg:       #211709;
+    --surface:  #2a1f0e;
+    --surface2: #342812;
+    --border:   #4a3520;
+    --hdr:      #120d04;
+    --hdr-fg:   #f0e0c0;
+    --accent:   #d46420;
+    --accent2:  #ff8040;
+    --text:     #f0e0c0;
+    --muted:    #9a7550;
+    --green:    #5aaa5a;
+    --red:      #e05555;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--page-bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100dvh;
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: 80px;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* subtle wood grain — fades out in dark mode */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      91deg, transparent 0px, transparent 42px,
+      rgba(0,0,0,0.028) 42px, rgba(0,0,0,0.028) 44px,
+      transparent 44px, transparent 80px,
+      rgba(255,255,255,0.04) 80px, rgba(255,255,255,0.04) 82px
+    );
+    pointer-events: none; z-index: 0;
+    opacity: 1; transition: opacity 0.3s;
+  }
+  body.dark::before { opacity: 0; }
+
+  /* ── HEADER  ── */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--hdr);
+    padding: 14px 16px 0;
+    transition: background 0.3s;
+  }
+
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+
+  .logo { display: flex; flex-direction: column; }
+  .logo-main { font-size: 19px; font-weight: 900; color: var(--hdr-fg); letter-spacing: 0.1px; line-height: 1.1; }
+  .logo-sub { font-size: 8px; font-weight: 500; color: var(--hdr-fg); opacity: 0.5; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+
+  .header-right { display: flex; align-items: center; gap: 8px; }
+
+  .team-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 20px; padding: 5px 12px;
+    font-size: 12px; font-weight: 600; color: var(--hdr-fg);
+    cursor: pointer; transition: background 0.15s;
+  }
+  .team-pill:hover { background: rgba(255,255,255,0.17); }
+  .team-pill-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+  .mode-btn {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 20px; padding: 5px 9px;
+    font-size: 13px; color: var(--hdr-fg);
+    cursor: pointer; font-family: var(--font-body);
+    transition: background 0.15s; line-height: 1;
+  }
+  .mode-btn:hover { background: rgba(255,255,255,0.17); }
+
+  .tabs { display: flex; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex-shrink: 0;
+    padding: 10px 16px; text-align: center;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
+    text-transform: uppercase; color: rgba(245,232,208,0.4);
+    cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── DATE NAV ── */
+  .date-nav {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 16px; border-bottom: 1px solid var(--border);
+    background: var(--surface); transition: background 0.3s;
+  }
+  .date-arrow {
+    width: 32px; height: 32px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--text); font-size: 17px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.15s; user-select: none;
+  }
+  .date-arrow:hover:not([disabled]) { border-color: var(--accent); color: var(--accent); }
+  .date-arrow[disabled] { opacity: 0.25; cursor: default; pointer-events: none; }
+  .date-display { flex: 1; text-align: center; cursor: pointer; }
+  .date-main { font-size: 15px; font-weight: 700; color: var(--text); transition: color 0.15s; }
+  .date-display:hover .date-main { color: var(--accent); }
+  .date-hint { font-family: var(--font-mono); font-size: 9px; color: var(--muted); letter-spacing: 0.6px; text-transform: uppercase; margin-top: 1px; }
+  #date-picker-input { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
+
+  /* ── MAIN ── */
+  main { padding: 16px; position: relative; z-index: 1; }
+
+  .section-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .section-title { font-size: 16px; font-weight: 800; color: var(--text); text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge { font-family: var(--font-mono); font-size: 11px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; color: var(--muted); }
+
+  /* ── TEAM CHIPS ── */
+  .team-selector { display: flex; gap: 7px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .team-selector::-webkit-scrollbar { display: none; }
+  .team-chip { flex-shrink: 0; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1.5px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .team-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ── TOTALS BAR ── */
+  .totals-bar {
+    background: var(--hdr); border-radius: 10px;
+    padding: 12px 16px; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .totals-label { font-size: 11px; color: var(--hdr-fg); opacity: 0.6; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .totals-sub { font-family: var(--font-mono); font-size: 9px; color: var(--hdr-fg); opacity: 0.4; margin-top: 2px; }
+  .totals-val { font-size: 30px; font-weight: 900; color: var(--accent); line-height: 1; }
+
+  /* ── GAME CARDS ── */
+  .game-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+  .game-card-header { padding: 8px 14px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .game-matchup { font-size: 12px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+  .player-row { display: flex; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); gap: 12px; }
+  .player-row:last-child { border-bottom: none; }
+  .player-info { flex: 1; min-width: 0; }
+  .player-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-school { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+
+  .player-status { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; white-space: nowrap; flex-shrink: 0; }
+  .status-starter  { background: rgba(42,110,42,0.15); color: var(--green); }
+  .status-bench    { background: rgba(196,85,8,0.15);  color: var(--accent); }
+  .status-dnp      { background: rgba(184,50,50,0.12); color: var(--red); }
+  .status-inactive { background: rgba(138,101,53,0.15); color: var(--muted); }
+  .status-fa       { background: rgba(138,101,53,0.15); color: var(--muted); }
+
+  .pra-block { text-align: right; min-width: 52px; flex-shrink: 0; }
+  .pra-big { font-size: 28px; font-weight: 900; line-height: 1; color: var(--text); }
+  .pra-hot  { color: var(--accent); }
+  .pra-fire { color: var(--accent2); }
+  .pra-dnp-label { font-family: var(--font-mono); font-size: 12px; color: var(--red); line-height: 2.5; }
+  .pra-breakdown { font-family: var(--font-mono); font-size: 9px; color: var(--muted); margin-top: 2px; }
+
+  /* ── STANDINGS ── */
+  .standings-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: background 0.12s; }
+  .standings-row:active { background: var(--surface2); }
+  .standings-row.is-me { border-color: var(--accent); background: rgba(196,85,8,0.06); }
+  .rank { font-size: 22px; font-weight: 900; min-width: 32px; color: var(--muted); line-height: 1; }
+  .rank.top3 { color: var(--accent); }
+  .standings-row.is-me .rank { color: var(--accent); }
+  .standing-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); pointer-events: none; }
+  .standing-total { font-size: 19px; font-weight: 800; color: var(--text); line-height: 1; }
+  .standing-behind { font-family: var(--font-mono); font-size: 10px; color: var(--red); margin-top: 2px; }
+  .standing-leader { font-family: var(--font-mono); font-size: 10px; color: var(--green); margin-top: 2px; }
+
+  /* ── STATS ── */
+  .filter-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+  .filter-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; white-space: nowrap; }
+  .filter-select { flex: 1; background: none; border: none; border-radius: 7px; color: var(--muted); font-family: var(--font-body); font-size: 11px; font-weight: 700; padding: 5px 4px; text-align: center; appearance: none; -webkit-appearance: none; cursor: pointer; }
+  .search-input { width: 100%; background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text); font-family: var(--font-body); font-size: 13px; font-weight: 600; padding: 10px 12px; margin-bottom: 10px; outline: none; }
+  .search-input::placeholder { color: var(--muted); opacity: 0.75; }
+  .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(196,85,8,0.12); }
+  .sort-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 11px; font-weight: 600; padding: 5px 10px; cursor: pointer; white-space: nowrap; font-family: var(--font-body); transition: all 0.15s; }
+  .sort-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .stats-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background 0.12s; }
+  .stats-card:active { background: var(--surface2); }
+  .stats-card.is-my-player { border-left: 3px solid var(--accent); }
+  .stats-card.is-fa { border-left: 3px solid var(--muted); opacity: 0.9; }
+  .stat-player-info { flex: 1; min-width: 0; pointer-events: none; }
+  .stat-player-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stat-player-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .stat-nums { display: flex; gap: 12px; flex-shrink: 0; pointer-events: none; }
+  .stat-col { text-align: center; }
+  .stat-val { font-size: 16px; font-weight: 800; line-height: 1; color: var(--text); }
+  .stat-val.sm { font-size: 14px; }
+  .stat-key { font-family: var(--font-mono); font-size: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+
+  /* Segmented control */
+  .seg-control { display: flex; background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 2px; margin-bottom: 10px; gap: 2px; }
+  .seg-btn { flex: 1; padding: 5px 4px; text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); border-radius: 7px; cursor: pointer; transition: all 0.15s; border: none; background: none; font-family: var(--font-body); }
+  .seg-btn.active { background: var(--accent); color: #fff; }
+
+  /* Free Agent toggle */
+  .fa-toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
+  .fa-toggle-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .fa-toggle-label.active { color: var(--accent); }
+  .toggle-switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; cursor: pointer; display: inline-block; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-track { position: absolute; inset: 0; background: var(--border); border-radius: 22px; transition: background 0.2s; cursor: pointer; }
+  .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.25); pointer-events: none; }
+  .toggle-switch input:checked ~ .toggle-track { background: var(--accent); }
+  .toggle-switch input:checked ~ .toggle-thumb { transform: translateX(18px); }
+  .fa-badge { font-size: 9px; font-weight: 400; padding: 1px 6px; border-radius: 3px; background: rgba(138,101,53,0.15); color: var(--muted); letter-spacing: 0.3px; margin-left: 4px; }
+  .tap-hint { font-family: var(--font-mono); font-size: 9px; color: var(--muted); margin-top: 3px; }
+
+  /* ── SCHOOL NAMEPLATE ── */
+  .school-tag { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.3px; padding: 1px 6px; border-radius: 3px; background: var(--surface2); color: var(--muted); vertical-align: middle; line-height: 1.7; }
+
+  /* ── GAME LOG ── */
+  .gl-row { display: flex; align-items: center; padding: 9px 14px; border-bottom: 1px solid var(--border); gap: 10px; }
+  .gl-row:last-child { border-bottom: none; }
+  .gl-row.gl-dnp { opacity: 0.5; }
+  .gl-date { font-family: var(--font-mono); font-size: 11px; color: var(--muted); min-width: 52px; flex-shrink: 0; }
+  .gl-mid { flex: 1; min-width: 0; }
+  .gl-opp { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gl-meta { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+  .gl-breakdown { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
+  .gl-pra { font-size: 22px; font-weight: 900; line-height: 1; min-width: 36px; text-align: right; flex-shrink: 0; color: var(--text); }
+  .gl-pra.pra-hot  { color: var(--accent); }
+  .gl-pra.pra-fire { color: var(--accent2); }
+  .gl-pra.pra-dnp  { font-family: var(--font-mono); font-size: 12px; color: var(--red); line-height: 2.5; }
+
+  /* ── BACK BTN ── */
+  .back-btn { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--accent); cursor: pointer; margin-bottom: 16px; background: none; border: none; padding: 0; font-family: var(--font-body); }
+
+  /* ── EMPTY / LOADING ── */
+  .empty-state { text-align: center; padding: 48px 24px; color: var(--muted); }
+  .empty-state .emoji { font-size: 40px; margin-bottom: 12px; }
+  .empty-title { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+  .empty-state p { font-size: 14px; line-height: 1.6; }
+  .state-action { margin-top: 14px; }
+  .state-btn { background: var(--accent); border: 1px solid var(--accent); border-radius: 8px; color: #fff; font-family: var(--font-body); font-size: 12px; font-weight: 800; padding: 8px 14px; cursor: pointer; }
+  .state-subtle { font-size: 12px; color: var(--muted); }
+  .loading { text-align: center; padding: 60px 20px; color: var(--muted); font-family: var(--font-mono); font-size: 13px; letter-spacing: 1px; }
+  .loading-dot { display: inline-block; animation: blink 1.2s infinite; }
+  .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
+
+  /* ── MODAL ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; display: flex; align-items: flex-end; backdrop-filter: blur(4px); }
+  .modal { background: #ffffff; border: 1px solid #c9a060; border-radius: 16px 16px 0 0; width: 100%; max-width: 480px; margin: 0 auto; padding: 20px 16px 40px; max-height: 75dvh; overflow-y: auto; }
+  body.dark .modal { background: #2a1f0e; border-color: #4a3520; }
+  .modal-title { font-size: 16px; font-weight: 800; color: #2a1c08; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+  body.dark .modal-title { color: #f0e0c0; }
+  .modal-option { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; border: 1.5px solid #b87540; border-radius: 10px; margin-bottom: 8px; cursor: pointer; font-size: 14px; font-weight: 700; color: #2a1c08; background: #e8c98e; }
+  body.dark .modal-option { color: #f0e0c0; background: #342812; border-color: #4a3520; }
+  .modal-option.selected { border-color: #c45508; background: rgba(196,85,8,0.1); }
+  body.dark .modal-option.selected { background: rgba(212,100,32,0.18); }
+  .modal-check { color: #c45508; font-size: 16px; flex-shrink: 0; }
+  .data-note { text-align: center; font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-top: 12px; }
+  .error-banner { background: rgba(184,50,50,0.1); border: 1px solid var(--red); border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; font-size: 12px; color: var(--red); font-family: var(--font-mono); }
+
+  .fade-in { animation: fadeIn 0.18s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── DRAFT BOARD ── */
+  .draft-section-header {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted);
+    font-family: var(--font-mono);
+    padding: 14px 0 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .draft-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 9px;
+    margin-bottom: 6px;
+  }
+  .draft-pick-num {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--muted); min-width: 28px; flex-shrink: 0;
+  }
+  .draft-player-info { flex: 1; min-width: 0; }
+  .draft-player-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .draft-player-meta { font-size: 10px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .draft-team { font-size: 11px; font-weight: 600; color: var(--text); text-align: right; flex-shrink: 0; max-width: 110px; text-align: right; line-height: 1.3; }
+  .draft-team.is-me { color: var(--accent); }
+  .draft-pass { color: var(--muted); font-style: italic; font-size: 12px; }
+
+  /* ── TRANSACTION LOG ── */
+  .txn-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 9px;
+    margin-bottom: 6px;
+  }
+  .txn-date { font-family: var(--font-mono); font-size: 10px; color: var(--muted); min-width: 52px; flex-shrink: 0; }
+  .txn-info { flex: 1; min-width: 0; }
+  .txn-player { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .txn-meta { font-size: 10px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .txn-team { font-size: 11px; font-weight: 600; color: var(--text); text-align: right; flex-shrink: 0; max-width: 100px; line-height: 1.3; }
+  .txn-badge {
+    font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; flex-shrink: 0;
+  }
+  .txn-added   { background: rgba(42,110,42,0.15);  color: var(--green); }
+  .txn-started { background: rgba(42,110,42,0.15);  color: var(--green); }
+  .txn-dropped { background: rgba(184,50,50,0.12);  color: var(--red); }
+  .txn-benched { background: rgba(196,85,8,0.15);   color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="logo">
+      <div class="logo-main">Sickos League</div>
+      <div class="logo-sub">Fantasy College Basketball</div>
+    </div>
+    <div class="header-right">
+      <div class="team-pill" id="team-pill-btn">
+        <div class="team-pill-dot"></div>
+        <span id="header-team-name">My Team</span>
+      </div>
+      <button class="mode-btn" id="mode-btn">☾</button>
+    </div>
+  </div>
+  <div class="tabs" id="tab-bar">
+    <div class="tab active"  data-tab="standings">Standings</div>
+    <div class="tab"         data-tab="roster">Rosters</div>
+    <div class="tab"         data-tab="scoreboard">Scoreboard</div>
+    <div class="tab"         data-tab="stats">Stats</div>
+    <div class="tab"         data-tab="draft">Draft</div>
+    <div class="tab"         data-tab="transactions">Transactions</div>
+  </div>
+</header>
+
+<div class="date-nav" id="date-nav" style="display:none">
+  <button class="date-arrow" id="date-prev">‹</button>
+  <label class="date-display" for="date-picker-input" style="cursor:pointer;flex:1;text-align:center">
+    <div class="date-main" id="date-label"></div>
+    <div class="date-hint" id="date-hint"></div>
+  </label>
+  <button class="date-arrow" id="date-next">›</button>
+  <input type="date" id="date-picker-input"
+         style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;overflow:hidden">
+</div>
+
+<main id="app"></main>
+
+<div class="modal-overlay" id="team-modal" style="display:none">
+  <div class="modal">
+    <div class="modal-title">YOUR TEAM</div>
+    <div id="team-modal-options"></div>
+    <div class="data-note">Saved on your device only — no login needed</div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ────────────────────────────────────────────────────────────────────
+// Everything season-specific lives here. To roll over to a new season, change
+// this block (and nothing else) after pointing the sheet at the new workbook.
+const SHEET_ID     = '1Ne5P3MxhLQckauqmeOZHlKdq6cshtgx0TtsSKenvtgo';
+const SEASON_LABEL = '2026–27';
+const SEASON_START = '2026-11-01';
+const SEASON_END   = '2027-03-07';
+const FA_MIN_PRAG  = 10;               // minimum PRA/G to show as free agent
+const DRAFT_SUPP_RANGE = 'A255:G369';  // supplemental (Nov/Dec/Jan/Feb) picks on the Draft tab
+const GAME_LOG_TAB = 'Game Log (locked)';
+
+// ─── SCHOOL COLORS ─────────────────────────────────────────────────────────────
+const SCHOOL_COLORS = {
+  'Abilene Christian': ['#4F2170','#FFFFFF'],
+  'Air Force': ['#003087','#8A8D8F'],
+  'Akron': ['#041E42','#A89968'],
+  'Alabama': ['#9E1B32','#FFFFFF'],
+  'Alabama A&M': ['#660000','#FFFFFF'],
+  'Alabama State': ['#C99700','#000000'],
+  'Albany': ['#461660','#EEB211'],
+  'Alcorn State': ['#4B306A','#C38300'],
+  'American': ['#143D8D','#FFFFFF'],
+  'Appalachian State': ['#222222','#FFCC00'],
+  'Arizona': ['#CC0033','#003366'],
+  'Arizona State': ['#8C1340','#FFC627'],
+  'Arkansas': ['#9D2235','#FFFFFF'],
+  'Arkansas State': ['#CC092F','#000000'],
+  'Army': ['#D4BF91','#000000'],
+  'Auburn': ['#0C2340','#E87722'],
+  'Austin Peay': ['#C41E3A','#FFFFFF'],
+  'Ball State': ['#BA0C2F','#000000'],
+  'Baylor': ['#154734','#FFB81C'],
+  'Bellarmine': ['#752936','#C8C8C8'],
+  'Belmont': ['#C8102E','#00205B'],
+  'Bethune-Cookman': ['#6F263D','#F2A900'],
+  'Binghamton': ['#005A43','#000000'],
+  'Boise State': ['#0033A0','#D64309'],
+  'Boston College': ['#98002E','#BC9B61'],
+  'Boston University': ['#A3011B','#FFFFFF'],
+  'Bowling Green': ['#F35000','#4F2C1D'],
+  'Bradley': ['#A50000','#FFFFFF'],
+  'Brown': ['#4E3629','#E4002B'],
+  'Bryant': ['#B4975B','#000000'],
+  'Bucknell': ['#E87722','#003865'],
+  'Buffalo': ['#005BBB','#FFFFFF'],
+  'Butler': ['#13294B','#FFFFFF'],
+  'BYU': ['#0062B8','#FFFFFF'],
+  'Cal Baptist': ['#002554','#A37400'],
+  'Cal Poly': ['#003831','#FFE395'],
+  'Cal State Bakersfield': ['#003594','#FFC72C'],
+  'Cal State Fullerton': ['#00274C','#DC8218'],
+  'California': ['#003262','#FDB515'],
+  'Campbell': ['#F58025','#000000'],
+  'Canisius': ['#0C2340','#FFBA00'],
+  'Central Arkansas': ['#4F2D7F','#818A8F'],
+  'Central Connecticut': ['#00539B','#FFFFFF'],
+  'Central Michigan': ['#6A0032','#FFC82E'],
+  'Charleston': ['#800000','#9D8958'],
+  'Charleston Southern': ['#A89963','#002855'],
+  'Charlotte': ['#046A38','#B9975B'],
+  'Chattanooga': ['#00386B','#E0AA0F'],
+  'Chicago State': ['#006666','#FFFFFF'],
+  'Cincinnati': ['#E00122','#000000'],
+  'Clemson': ['#F56600','#522D80'],
+  'Cleveland State': ['#006747','#FFFFFF'],
+  'Coastal Carolina': ['#006F71','#FFFFFF'],
+  'Colgate': ['#821019','#FFFFFF'],
+  'Colorado': ['#CFB87C','#000000'],
+  'Colorado State': ['#1E4D2B','#C8C372'],
+  'Columbia': ['#9BCBEB','#003865'],
+  'Connecticut': ['#000E2F','#FFFFFF'],
+  'Coppin State': ['#003056','#FFC915'],
+  'Cornell': ['#B31B1B','#FFFFFF'],
+  'Creighton': ['#005CA9','#FFFFFF'],
+  'CSUN': ['#CE1126','#D1C3C6'],
+  'Dartmouth': ['#046A38','#FFFFFF'],
+  'Davidson': ['#AC1A2F','#000000'],
+  'Dayton': ['#CE1141','#FFFFFF'],
+  'Delaware': ['#00539F','#FFDD31'],
+  'Delaware State': ['#EE3124','#72CDF4'],
+  'Denver': ['#8B2332','#FFFFFF'],
+  'DePaul': ['#005EB8','#FFFFFF'],
+  'Detroit Mercy': ['#A6093D','#FFFFFF'],
+  'Drake': ['#004477','#999999'],
+  'Drexel': ['#00437B','#FFDA02'],
+  'Duke': ['#003087','#FFFFFF'],
+  'Duquesne': ['#041E42','#BA0C2F'],
+  'East Carolina': ['#592A8A','#FDC82F'],
+  'East Tennessee State': ['#041E42','#FFC72C'],
+  'East Texas A&M': ['#00386C','#FFC333'],
+  'Eastern Illinois': ['#004B83','#919295'],
+  'Eastern Kentucky': ['#8A0039','#FFFFFF'],
+  'Eastern Michigan': ['#006633','#FFFFFF'],
+  'Eastern Washington': ['#A10022','#000000'],
+  'Elon': ['#73000A','#B59A57'],
+  'Evansville': ['#52237F','#F36F21'],
+  'Fairfield': ['#C8102E','#A2AAAD'],
+  'Fairleigh Dickinson': ['#283341','#FFFFFF'],
+  'FAU': ['#003366','#CC0000'],
+  'FIU': ['#081E3F','#B6862C'],
+  'Florida': ['#0021A5','#FA4616'],
+  'Florida A&M': ['#EE7624','#1B5633'],
+  'Florida Gulf Coast': ['#002D72','#007749'],
+  'Florida State': ['#782F40','#CEB888'],
+  'Fordham': ['#860038','#FFFFFF'],
+  'Fresno State': ['#DB0032','#002E6D'],
+  'Furman': ['#201547','#A7A8AA'],
+  'Gardner-Webb': ['#BF2F37','#000000'],
+  'George Mason': ['#006633','#FFCC33'],
+  'George Washington': ['#E2CB92','#002654'],
+  'Georgetown': ['#041E42','#8D817B'],
+  'Georgia': ['#BA0C2F','#000000'],
+  'Georgia Southern': ['#011E41','#87714D'],
+  'Georgia State': ['#0039A6','#D96A6A'],
+  'Georgia Tech': ['#B3A369','#003057'],
+  'Gonzaga': ['#041E42','#C8102E'],
+  'Grambling': ['#000000','#EAA921'],
+  'Grand Canyon': ['#522398','#000000'],
+  'Green Bay': ['#006747','#FFFFFF'],
+  'Hampton': ['#0060A9','#FFFFFF'],
+  'Harvard': ['#A41034','#FFFFFF'],
+  'Hawai\'i': ['#024731','#C8C8C8'],
+  'High Point': ['#330072','#FFFFFF'],
+  'Hofstra': ['#0B1E73','#FEB612'],
+  'Holy Cross': ['#602D89','#FFFFFF'],
+  'Houston': ['#C8102E','#B4B2B4'],
+  'Houston Christian': ['#1C439D','#F3652C'],
+  'Howard': ['#003A63','#E51937'],
+  'Idaho': ['#B3A369','#000000'],
+  'Idaho State': ['#FF671F','#000000'],
+  'Illinois': ['#E84A27','#13294B'],
+  'Illinois State': ['#CE1126','#FFFFFF'],
+  'Incarnate Word': ['#CB333B','#000000'],
+  'Indiana': ['#960009','#EEEDEB'],
+  'Indiana State': ['#0142BC','#FFFFFF'],
+  'Iona': ['#6F2C3F','#F2A900'],
+  'Iowa': ['#FFCD00','#000000'],
+  'Iowa State': ['#C8102E','#F1BE48'],
+  'IU Indy': ['#9D2235','#DFD1A7'],
+  'Jackson State': ['#002147','#FFFFFF'],
+  'Jacksonville': ['#004E44','#898A8D'],
+  'Jacksonville State': ['#CC0000','#000000'],
+  'James Madison': ['#450084','#CBB677'],
+  'kansas': ['#0051BA','#FFFFFF'],
+  'Kansas City': ['#005293','#FECB00'],
+  'Kansas State': ['#512888','#D1D1D1'],
+  'Kennesaw State': ['#FDBB30','#000000'],
+  'Kent State': ['#002664','#EAAB00'],
+  'Kentucky': ['#0033A0','#FFFFFF'],
+  'La Salle': ['#FFCC00','#003366'],
+  'Lafayette': ['#A89963','#98002E'],
+  'Lamar': ['#DC0032','#FFFFFF'],
+  'Le Moyne': ['#00452A','#FCE300'],
+  'Lehigh': ['#653600','#FFD24F'],
+  'Liberty': ['#002D62','#C41230'],
+  'Lindenwood': ['#B5A36A','#000000'],
+  'Lipscomb': ['#331E54','#F4AA00'],
+  'Little Rock': ['#6E2639','#A7A9AC'],
+  'LIU': ['#69B3E7','#000000'],
+  'Long Beach State': ['#FFC72A','#000000'],
+  'Longwood': ['#15213B','#999D93'],
+  'Louisiana': ['#CE1813','#FFFFFF'],
+  'Louisiana Tech': ['#002F8B','#F31B23'],
+  'Louisiana-Monroe': ['#840029','#FDB913'],
+  'Louisville': ['#AD0000','#000000'],
+  'Loyola Chicago': ['#922247','#FEBD18'],
+  'Loyola Maryland': ['#006943','#CACAC8'],
+  'Loyola Marymount': ['#0076A5','#FFFFFF'],
+  'LSU': ['#461D7C','#FDD023'],
+  'Maine': ['#003263','#B0D7FF'],
+  'Manhattan': ['#00703C','#FFFFFF'],
+  'Marist': ['#C8102E','#B2B2B2'],
+  'Marquette': ['#003366','#FFCC00'],
+  'Marshall': ['#00B140','#FFFFFF'],
+  'Maryland': ['#E03A3E','#FFD520'],
+  'McNeese': ['#00529B','#FFD204'],
+  'Memphis': ['#003087','#898D8D'],
+  'Mercer': ['#F76800','#000000'],
+  'Mercyhurst': ['#07594D','#FFFFFF'],
+  'Merrimack': ['#003768','#FDB813'],
+  'Miami': ['#005030','#F47321'],
+  'Miami University': ['#B61E2E','#FFFFFF'],
+  'Michigan': ['#00274C','#FFCB05'],
+  'Michigan State': ['#18453B','#FFFFFF'],
+  'Middle Tennessee': ['#0066CC','#000000'],
+  'Milwaukee': ['#FFBD00','#000000'],
+  'Minnesota': ['#7A0019','#FFCC33'],
+  'Mississippi State': ['#660000','#FFFFFF'],
+  'Mississippi Valley State': ['#00703C','#FFFFFF'],
+  'Missouri State': ['#530009','#FFFFFF'],
+  'Mizzou': ['#000000','#F1B82D'],
+  'Monmouth': ['#041E42','#FFFFFF'],
+  'Montana': ['#660033','#999999'],
+  'Montana State': ['#00205B','#B9975B'],
+  'Morehead State': ['#005EB8','#FFCF00'],
+  'Morgan State': ['#1B4383','#F47937'],
+  'Mount St. Mary\'s': ['#002855','#84754E'],
+  'Murray State': ['#ECAC00','#002144'],
+  'Navy': ['#00205B','#C5B783'],
+  'NC State': ['#CC0000','#FFFFFF'],
+  'Nebraska': ['#E41C38','#FFFFFF'],
+  'Nevada': ['#003366','#807F84'],
+  'New Hampshire': ['#041E42','#BBBCBC'],
+  'New Haven': ['#004B8D','#FFC423'],
+  'New Mexico': ['#BA0C2F','#A7A8AA'],
+  'New Mexico State': ['#861F41','#97999B'],
+  'New Orleans': ['#005CA6','#A3A9AC'],
+  'Niagara': ['#582C83','#FFFFFF'],
+  'Nicholls': ['#AE132A','#FFFFFF'],
+  'NJIT': ['#D22630','#071D49'],
+  'Norfolk State': ['#007A53','#F3D03E'],
+  'North Alabama': ['#46166B','#DB9F11'],
+  'North Carolina': ['#7BAFD4','#FFFFFF'],
+  'North Carolina A&T': ['#F3B237','#003D6D'],
+  'North Carolina Central': ['#880023','#8E9093'],
+  'North Dakota': ['#009A44','#000000'],
+  'North Dakota State': ['#0A5640','#FFC72A'],
+  'North Florida': ['#00246B','#D9D9D9'],
+  'North Texas': ['#00853E','#000000'],
+  'Northeastern': ['#D41B2C','#000000'],
+  'Northern Arizona': ['#003466','#FFD200'],
+  'Northern Colorado': ['#013C65','#F6B000'],
+  'Northern Illinois': ['#BA0C2F','#000000'],
+  'Northern Iowa': ['#4B116F','#FFCC00'],
+  'Northern Kentucky': ['#000000','#FFC72C'],
+  'Northwestern': ['#4E2A84','#FFFFFF'],
+  'Northwestern State': ['#663399','#FF6600'],
+  'Notre Dame': ['#0C2340','#C99700'],
+  'Oakland': ['#B59A57','#000000'],
+  'Ohio': ['#00694E','#FFFFFF'],
+  'Ohio State': ['#BB0000','#B1B7BC'],
+  'Oklahoma': ['#841617','#FDF9D8'],
+  'Oklahoma State': ['#FF7300','#000000'],
+  'Old Dominion': ['#003057','#7C878E'],
+  'Ole Miss': ['#14213D','#CE1126'],
+  'Omaha': ['#000000','#D71920'],
+  'Oral Roberts': ['#002F60','#C5B783'],
+  'Oregon': ['#154733','#FEE123'],
+  'Oregon State': ['#DC4405','#000000'],
+  'Pacific': ['#E35205','#231F20'],
+  'Penn': ['#011F5B','#FFFFFF'],
+  'Penn State': ['#041E42','#FFFFFF'],
+  'Pepperdine': ['#00205C','#EE7624'],
+  'Pittsburgh': ['#003594','#FFB81C'],
+  'Portland': ['#320274','#FFFFFF'],
+  'Portland State': ['#154734','#FFFFFF'],
+  'Prairie View A&M': ['#330066','#FFCC33'],
+  'Presbyterian': ['#0060A9','#FFFFFF'],
+  'Princeton': ['#FF571F','#000000'],
+  'Providence': ['#000000','#8A8D8F'],
+  'Purdue': ['#CEB888','#000000'],
+  'Purdue Fort Wayne': ['#CFB991','#000000'],
+  'Queens': ['#192C66','#857040'],
+  'Quinnipiac': ['#0C2340','#FFB81C'],
+  'Radford': ['#C2011B','#D1D3D4'],
+  'Rhode Island': ['#68ABE8','#002147'],
+  'Rice': ['#00205B','#C1C6C8'],
+  'Richmond': ['#000066','#FFFFFF'],
+  'Rider': ['#981E32','#FFFFFF'],
+  'Robert Morris': ['#14234B','#A6192E'],
+  'Rutgers': ['#CC0033','#FFFFFF'],
+  'Sacramento State': ['#043927','#C4B581'],
+  'Sacred Heart': ['#CE1141','#B1B3B6'],
+  'Saint Francis': ['#BD1F25','#FFFFFF'],
+  'Saint Joseph\'s': ['#931B32','#000000'],
+  'Saint Louis': ['#003DA5','#C8C9C7'],
+  'Saint Mary\'s': ['#D80024','#06315B'],
+  'Saint Peter\'s': ['#003C71','#A59C94'],
+  'Sam Houston': ['#FE5100','#FFFFFF'],
+  'Samford': ['#002649','#C4161D'],
+  'San Diego': ['#002868','#84BCE8'],
+  'San Diego State': ['#A6192E','#000000'],
+  'San Francisco': ['#00543C','#FDBB30'],
+  'San Jose State': ['#0055A2','#E5A823'],
+  'Santa Clara': ['#862633','#FFFFFF'],
+  'Seattle U': ['#AA0000','#000000'],
+  'SEMO': ['#C8102E','#000000'],
+  'Seton Hall': ['#004488','#A2AAAD'],
+  'Siena': ['#006747','#FFC72C'],
+  'SIUE': ['#EF3829','#000000'],
+  'SMU': ['#0033A0','#FFFFFF'],
+  'South Alabama': ['#00205B','#BF0D3E'],
+  'South Carolina': ['#73000A','#FFFFFF'],
+  'South Carolina State': ['#862633','#FFFFFF'],
+  'South Dakota': ['#AD0000','#B4B4B4'],
+  'South Dakota State': ['#0033A0','#FFD100'],
+  'South Florida': ['#006747','#CFC493'],
+  'Southeastern Louisiana': ['#006341','#EAAA00'],
+  'Southern': ['#58B6E7','#000000'],
+  'Southern Illinois': ['#720000','#FFFFFF'],
+  'Southern Indiana': ['#CF102D','#002D5D'],
+  'Southern Miss': ['#FFAB00','#000000'],
+  'Southern Utah': ['#C41425','#000000'],
+  'St. Bonaventure': ['#54261A','#BDB680'],
+  'St. John\'s': ['#BA0C2F','#041C2C'],
+  'St. Thomas': ['#510C76','#98999B'],
+  'Stanford': ['#8C1515','#FFFFFF'],
+  'Stephen F. Austin': ['#613393','#FFFFFF'],
+  'Stetson': ['#00523E','#FFFFFF'],
+  'Stonehill': ['#2F2975','#FFFFFF'],
+  'Stony Brook': ['#990000','#FFFFFF'],
+  'Syracuse': ['#F76900','#000354'],
+  'TAMUCC': ['#0067C5','#FFFFFF'],
+  'Tarleton': ['#4F2D7F','#FFFFFF'],
+  'TCU': ['#4D1979','#FFFFFF'],
+  'Temple': ['#9D2235','#8A8D8F'],
+  'Tennessee': ['#FF8200','#FFFFFF'],
+  'Tennessee State': ['#00539F','#FFFFFF'],
+  'Tennessee Tech': ['#4F2984','#FFDD00'],
+  'Texas': ['#BF5700','#FFFFFF'],
+  'Texas A&M': ['#500000','#FFFFFF'],
+  'Texas Southern': ['#7C183E','#9DA6AB'],
+  'Texas State': ['#501214','#8D734A'],
+  'Texas Tech': ['#000000','#CC0000'],
+  'The Citadel': ['#3975B7','#FFFFFF'],
+  'Toledo': ['#15397F','#FFDA00'],
+  'Towson': ['#FFBB00','#3C3C3C'],
+  'Troy': ['#8A2432','#B3B5B8'],
+  'Tulane': ['#006747','#418FDE'],
+  'Tulsa': ['#002D72','#C5B783'],
+  'UAB': ['#006341','#CC8A00'],
+  'UAPB': ['#EEB310','#000000'],
+  'UC Davis': ['#002855','#B3A369'],
+  'UC Irvine': ['#0C2340','#FFC72C'],
+  'UC Riverside': ['#2D6CC0','#F1AB00'],
+  'UC San Diego': ['#182B49','#FFCD00'],
+  'UC Santa Barbara': ['#003660','#F3BC11'],
+  'UCF': ['#BA9B37','#000000'],
+  'UCLA': ['#2D68C4','#F2A900'],
+  'UIC': ['#AC1E2D','#041E42'],
+  'Massachusetts': ['#572932','#FFFFFF'],
+  'UMass Lowell': ['#003DA5','#FFFFFF'],
+  'UMBC': ['#B18906','#000000'],
+  'UMES': ['#862633','#888B8D'],
+  'UNC Asheville': ['#003DA5','#FFFFFF'],
+  'UNC Greensboro': ['#0F2044','#FFB71B'],
+  'UNC Wilmington': ['#006666','#FFFFFF'],
+  'UNLV': ['#CF0A2C','#CAC8C8'],
+  'USC': ['#990000','#FFC72C'],
+  'USC Upstate': ['#00703C','#000000'],
+  'UT Arlington': ['#F58025','#0064B1'],
+  'UT Martin': ['#F79728','#002A5B'],
+  'Utah': ['#BE0000','#FFFFFF'],
+  'Utah State': ['#00263A','#8A8D8F'],
+  'Utah Tech': ['#BA1C21','#0C233F'],
+  'Utah Valley': ['#275D38','#838C89'],
+  'UTEP': ['#FF8200','#041E42'],
+  'UTRGV': ['#FFA300','#00843D'],
+  'UTSA': ['#F15A22','#0C2340'],
+  'Valparaiso': ['#381E0E','#FFCC00'],
+  'Vanderbilt': ['#866D4B','#000000'],
+  'VCU': ['#FFB300','#000000'],
+  'Vermont': ['#154734','#FFC72C'],
+  'Villanova': ['#00205B','#13B5EA'],
+  'Virginia': ['#232D4B','#F84C1E'],
+  'Virginia Tech': ['#630031','#CF4420'],
+  'VMI': ['#A71F23','#FFD520'],
+  'Wagner': ['#00483A','#B9BBBD'],
+  'Wake Forest': ['#937E38','#000000'],
+  'Washington': ['#4B2E83','#B7A57A'],
+  'Washington State': ['#981E32','#FFFFFF'],
+  'Weber State': ['#4B2672','#A1A1A4'],
+  'West Georgia': ['#0656A5','#FFFFFF'],
+  'West Virginia': ['#002855','#FAAA00'],
+  'Western Carolina': ['#592C88','#C1A875'],
+  'Western Illinois': ['#663399','#FFCC00'],
+  'Western Kentucky': ['#C60C30','#000000'],
+  'Western Michigan': ['#6C4023','#B5A167'],
+  'Wichita State': ['#FFCD00','#000000'],
+  'William & Mary': ['#115740','#F0B323'],
+  'Winthrop': ['#660000','#F0B323'],
+  'Wisconsin': ['#C5050C','#FFFFFF'],
+  'Wofford': ['#88634C','#000000'],
+  'Wright State': ['#026937','#CEA052'],
+  'Wyoming': ['#FFC425','#492F24'],
+  'Xavier': ['#0C2340','#93A2A2'],
+  'Yale': ['#00356B','#FFFFFF'],
+  'Youngstown State': ['#C8102E','#FFFFFF'],
+};
+
+// Render helpers keep sheet-fed values from becoming markup.
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+function attr(v) {
+  return esc(v).replace(/`/g, '&#96;');
+}
+
+function num(v) {
+  return Number(v || 0);
+}
+
+function fmtInt(v) {
+  return num(v).toLocaleString();
+}
+
+function emptyStateHTML(icon, title, body, actionLabel, action) {
+  const iconText = String(icon || '');
+  const iconBlock = iconText && iconText.length <= 2
+    ? `<div class="emoji">${esc(iconText)}</div>`
+    : '';
+  const button = actionLabel && action
+    ? `<div class="state-action"><button class="state-btn" data-action="${attr(action)}">${esc(actionLabel)}</button></div>`
+    : '';
+  return `<div class="empty-state">
+    ${iconBlock}
+    <div class="empty-title">${esc(title)}</div>
+    <p>${body}</p>
+    ${button}
+  </div>`;
+}
+
+function errorBannerHTML(errors) {
+  if (!errors || !errors.length) return '';
+  return `<div class="error-banner">
+    ${esc(errors.join(' · '))}
+    <div class="state-action"><button class="state-btn" data-action="retry-init">Retry data load</button></div>
+  </div>`;
+}
+
+// Returns a jersey-nameplate styled span for a school name
+function schoolTag(school) {
+  const colors = SCHOOL_COLORS[school];
+  const label = esc(school);
+  if (!colors) return `<span class="school-tag">${label}</span>`;
+  const [bg, text] = colors;
+  return `<span class="school-tag" style="background:${attr(bg)};color:${attr(text)}">${label}</span>`;
+}
+
+// ─── COLUMN MAPS (positional, bypasses gviz label mangling) ───────────────────
+// Game Log (locked): no meta row, gviz consumed header as cols, rows[] = data
+const GL = { Team:1, Date:2, Player:3, School:4, Conference:5, Opponent:6,
+             GameNumber:7, RosterStatus:8, Minutes:9, Points:10, Rebounds:11, Assists:12, PRA:13 };
+
+// Player Stats (locked): meta row + header row before data, skip first 2 gviz rows
+// cols: 0=Team,1=DraftRound,2=Player,3=School,4=Conference,5=GamesPlayed,
+//       6=TotalPRA,7=PRAG,8=HighPRA,9=LowPRA,10=PPG,11=RPG,12=APG,
+//       13=DNPs,14=Points,15=Rebounds,16=Assists,17=LastFirst,
+//       18=GPplusDNP,19=PRAGlast5,20=GamesRemaining,21=CurrentStatus
+const PS = { Team:0, DraftRound:1, Player:2, School:3, Conference:4, GamesPlayed:5,
+             TotalPRA:6, PRAG:7, PPG:10, RPG:11, APG:12,
+             Points:14, Rebounds:15, Assists:16,
+             GPplusDNP:18, RosterStatus:21 };
+const PS_SKIP = 0;
+
+// api_standings: no meta row, rows[] = data
+const ST = { Rank:0, Team:1, TotalPRA:2, PRABehind:3 };
+
+// ─── STATE ─────────────────────────────────────────────────────────────────────
+let myTeam         = localStorage.getItem('sickos_team') || null;
+let currentTab     = 'standings';
+let viewDate       = clampToSeason(localYMD());
+let scoreFilter    = null;
+let statSort       = 'total';
+let statTeamFilter = 'ALL';
+let statConfFilter = 'ALL';
+let statView       = 'total';
+let statsScope     = 'sicko';  // 'sicko' = rostered Sicko games only, 'all' = full college season stats
+let rosterTeamFilter = myTeam || null;
+let rosterSearch   = '';
+let statSearch     = '';
+let faEnabled      = false;   // has user toggled free agents on?
+let faLoaded       = false;   // has the FA data been fetched yet?
+let faLoading      = false;   // fetch in progress?
+let faLoadingSource= 'free agents'; // label for the current master-log fetch
+let freeAgents     = [];      // aggregated FA player stats
+let allSeasonStats = [];      // full-season stats for every player in the master game log
+let allSeasonRawLogs = {};    // player|school -> full-season game log rows
+let faRawLogs      = {};      // athleteId → game log rows
+let psResCache     = null;    // raw psRes rows cached for activeRosterSet building
+// Navigation stack for back button
+let navStack       = [];
+
+let gameLog    = null;
+let standings  = null;
+let playerStats= null;
+let draftData  = null;   // from Draft tab
+let txnData    = null;   // from Transaction Log tab
+let locationMap= {};
+let awayHomeMap= {};
+let allSickos  = [];
+let loadErrors = [];
+let indexes = emptyIndexes();
+
+// Transaction filters
+let txnTeamFilter = 'ALL';
+let txnTypeFilter = 'ANY';
+let draftTeamFilter = 'ALL';
+let draftConfFilter = 'ALL';
+
+function emptyIndexes() {
+  return {
+    gameLogByDate: new Map(),
+    playerLogsByTeamPlayer: new Map(),
+    playersByTeam: new Map(),
+    standingsByTeam: new Map(),
+    transactionsByTeam: new Map(),
+    draftCountsByRound: new Map(),
+    draftRoundOrder: [],
+  };
+}
+
+function mapListPush(map, key, value) {
+  if (!map.has(key)) map.set(key, []);
+  map.get(key).push(value);
+}
+
+function teamPlayerKey(team, player) {
+  return `${String(team ?? '').trim()}||${String(player ?? '').trim()}`;
+}
+
+function playerSearchText(row) {
+  return [
+    row.Player, row.Team, row.School, row.Conference,
+    row.player, row.team, row.school, row.conf
+  ].filter(Boolean).join(' ').toLowerCase();
+}
+
+function matchesPlayerSearch(row, query) {
+  const q = String(query || '').trim().toLowerCase();
+  return !q || playerSearchText(row).includes(q);
+}
+
+function refocusInput(id, value) {
+  setTimeout(() => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.focus();
+    try { input.setSelectionRange(String(value || '').length, String(value || '').length); } catch(_) {}
+  }, 0);
+}
+
+function buildIndexes() {
+  indexes = emptyIndexes();
+  (gameLog || []).forEach(row => {
+    mapListPush(indexes.gameLogByDate, row._ymd, row);
+    mapListPush(indexes.playerLogsByTeamPlayer, teamPlayerKey(row.Team, row.Player), row);
+  });
+  indexes.playerLogsByTeamPlayer.forEach(rows => rows.sort((a,b) => a._ymd.localeCompare(b._ymd)));
+
+  (playerStats || []).forEach(row => mapListPush(indexes.playersByTeam, row.Team, row));
+  indexes.playersByTeam.forEach(rows => rows.sort((a,b) => (Number(b.TotalPRA)||0)-(Number(a.TotalPRA)||0)));
+
+  (standings || []).forEach(row => indexes.standingsByTeam.set(row.Team, row));
+
+  (txnData || []).forEach(row => mapListPush(indexes.transactionsByTeam, row.team, row));
+
+  const seenRounds = new Set();
+  (draftData || []).forEach(row => {
+    if (!seenRounds.has(row.round)) {
+      seenRounds.add(row.round);
+      indexes.draftRoundOrder.push(row.round);
+    }
+    indexes.draftCountsByRound.set(row.round, (indexes.draftCountsByRound.get(row.round) || 0) + 1);
+  });
+}
+
+// ─── EVENT DELEGATION ──────────────────────────────────────────────────────────
+// All dynamic content uses data-action + data-* attributes.
+// Static header buttons use direct listeners below.
+document.addEventListener('click', function(e) {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const action = el.dataset.action;
+
+  if (action === 'score-filter') { scoreFilter = el.dataset.team; renderScoreboard(); }
+  else if (action === 'view-team') { viewTeam(el.dataset.team); }
+  else if (action === 'retry-init') { init(); }
+  else if (action === 'view-player') {
+    // Push current view as the back destination
+    const returnFn = currentTab === 'draft'         ? renderDraft
+                   : currentTab === 'transactions'  ? renderTransactions
+                   : currentTab === 'roster'        ? renderRoster
+                   : currentTab === 'stats'         ? renderStats
+                   : currentTab === 'scoreboard'    ? renderScoreboard
+                   : renderStandings;
+    navStack = [returnFn];
+    viewPlayerLog(el.dataset.team, el.dataset.player);
+  }
+  else if (action === 'back') { navBack(); }
+  else if (action === 'set-stat-sort') { statSort = el.dataset.sort; renderStats(); }
+  else if (action === 'set-stat-view') { statView = el.dataset.view; statSort = statView === 'total' ? 'total' : 'prag'; renderStats(); }
+  else if (action === 'set-stats-scope') {
+    statsScope = el.dataset.scope;
+    if (statsScope === 'all' && !faLoaded && !faLoading) { faLoadingSource = 'all games'; fetchFreeAgents(); }
+    else renderStats();
+  }
+  else if (action === 'toggle-fa') {
+    faEnabled = !faEnabled;
+    if (faEnabled && !faLoaded && !faLoading) { faLoadingSource = 'free agents'; fetchFreeAgents(); }
+    else renderStats();
+  }
+  else if (action === 'set-txn-team') { txnTeamFilter = el.dataset.team; renderTransactions(); }
+  else if (action === 'set-txn-type') { txnTypeFilter = el.dataset.type; renderTransactions(); }
+  else if (action === 'jump-round')   { jumpToRound(el.dataset.round); }
+  else if (action === 'select-my-team') { selectMyTeam(el.dataset.team); }
+});
+
+// Stats team filter (select element)
+document.addEventListener('change', function(e) {
+  if (e.target.id === 'stat-team-select') { statTeamFilter = e.target.value; renderStats(); }
+  if (e.target.id === 'stat-conf-select') { statConfFilter = e.target.value; renderStats(); }
+  if (e.target.id === 'roster-team-select') { rosterTeamFilter = e.target.value; renderRoster(); }
+  if (e.target.id === 'txn-team-select')  { txnTeamFilter  = e.target.value; renderTransactions(); }
+  if (e.target.id === 'txn-type-select')  { txnTypeFilter  = e.target.value; renderTransactions(); }
+  if (e.target.id === 'draft-team-select') { draftTeamFilter = e.target.value; renderDraft(); }
+  if (e.target.id === 'draft-conf-select') { draftConfFilter = e.target.value; renderDraft(); }
+  if (e.target.id === 'date-picker-input') { onPickerChange(e.target.value); }
+});
+
+document.addEventListener('input', function(e) {
+  if (e.target.id === 'stat-search-input') {
+    statSearch = e.target.value;
+    renderStats();
+    refocusInput('stat-search-input', statSearch);
+  }
+  if (e.target.id === 'roster-search-input') {
+    rosterSearch = e.target.value;
+    renderRoster();
+    refocusInput('roster-search-input', rosterSearch);
+  }
+});
+
+// Static header buttons
+document.querySelectorAll('[data-tab]').forEach(el => {
+  el.addEventListener('click', () => switchTab(el.dataset.tab));
+});
+document.getElementById('team-pill-btn').addEventListener('click', openTeamModal);
+document.getElementById('date-prev').addEventListener('click', () => shiftDate(-1));
+document.getElementById('date-next').addEventListener('click', () => shiftDate(1));
+document.getElementById('team-modal').addEventListener('click', function(e) {
+  if (e.target === this) this.style.display = 'none';
+});
+
+// ─── FETCH ─────────────────────────────────────────────────────────────────────
+async function gvizFetch(sheetName, query) {
+  const url  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`
+             + (query ? `&tq=${encodeURIComponent(query)}` : '');
+  const res  = await fetch(url);
+  const text = await res.text();
+  const json = JSON.parse(text.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
+  return json.table.rows;
+}
+
+async function gvizFetchRange(sheetName, range) {
+  const url  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&range=${encodeURIComponent(range)}`;
+  const res  = await fetch(url);
+  const text = await res.text();
+  const json = JSON.parse(text.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
+  return json.table.rows;
+}
+
+// ─── DATE HELPERS ──────────────────────────────────────────────────────────────
+function localYMD() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function clampToSeason(ymd) {
+  return ymd < SEASON_START ? SEASON_START : ymd > SEASON_END ? SEASON_END : ymd;
+}
+
+// ─── LEAGUE GAME LOG ───────────────────────────────────────────────────────────
+// The 26-27 Game Log holds every college player; non-league players have a blank Team.
+// Startup only needs league rows, so ask Google for just those (Team = column B).
+// If that filtered query fails or comes back empty, fall back to the full tab —
+// the parser above drops blank-Team rows either way.
+async function fetchLeagueGameLog() {
+  try {
+    const rows = await gvizFetch(GAME_LOG_TAB, 'select * where B is not null');
+    if (rows && rows.length) return rows;
+    console.warn('Filtered game log returned no rows; falling back to full fetch');
+  } catch (e) {
+    console.warn('Filtered game log failed; falling back to full fetch', e);
+  }
+  return gvizFetch(GAME_LOG_TAB);
+}
+
+// ─── FREE AGENT FETCH ──────────────────────────────────────────────────────────
+// Free agents and "All Games" stats come from the full Game Log (locked) tab, which in
+// 26-27 contains every college player. Rows with a blank Team are non-league players
+// (RosterStatus 'Inactive'). Cols follow the GL map: 1=Team,2=Date,3=Player,4=School,
+// 5=Conference,6=Opponent,7=GameNumber,8=RosterStatus,9=Min,10=Pts,11=Reb,12=Ast,13=PRA
+async function fetchFreeAgents() {
+  if (faLoaded || faLoading) return;
+  faLoading = true;
+  renderStats(); // re-render to show loading state in toggle
+
+  try {
+    const rows = await gvizFetch(GAME_LOG_TAB); // full tab, every player
+
+    // Build active roster set directly from raw psResCache (all rows, no PS_SKIP)
+    // so we catch ALL Starter/Bench players including any skipped by PS_SKIP
+    const activeRosterSet = new Set();
+    if (psResCache) {
+      for (let i = 0; i < psResCache.length; i++) {
+        const r  = psResCache[i];
+        const pl = String(cell(r, PS.Player)||'').trim();
+        const st = String(cell(r, PS.RosterStatus)||'').trim();
+        if (pl && (st === 'Starter' || st === 'Bench')) activeRosterSet.add(pl);
+      }
+    }
+
+    // Aggregate by player. We build two datasets from the same master log:
+    // 1) allAgg: every player, every game, for the Stats page's "All Games" mode
+    // 2) agg: free agents only, preserving the existing free-agent toggle behavior
+    const agg = {};
+    const allAgg = {};
+
+    function addToAgg(store, rawStore, aggKey, player, school, conf, teamLabel, statusLabel, g, pra, pts, reb, ast, mins, isDNP) {
+      if (!store[aggKey]) {
+        store[aggKey] = { Player:player, School:school, Conference:conf,
+                          AggKey:aggKey,
+                          Team:teamLabel, RosterStatus:statusLabel, DraftRound:'',
+                          totalPRA:0, totalPts:0, totalReb:0, totalAst:0,
+                          totalMins:0, gp:0, gpAll:0 };
+      }
+      if (!rawStore[aggKey]) rawStore[aggKey] = [];
+      rawStore[aggKey].push({
+        _ymd:         g.ymd,
+        Opponent:     g.opponent,
+        RosterStatus: statusLabel,
+        GameNumber:   g.gameNumber,
+        Minutes:      mins,
+        Points:       pts,
+        Rebounds:     reb,
+        Assists:      ast,
+        PRA:          pra,
+        Team:         teamLabel,
+        Player:       player,
+        School:       school,
+      });
+      store[aggKey].gpAll++;
+      if (!isDNP) {
+        store[aggKey].gp++;
+        store[aggKey].totalPRA += pra;
+        store[aggKey].totalPts += pts;
+        store[aggKey].totalReb += reb;
+        store[aggKey].totalAst += ast;
+        store[aggKey].totalMins += mins;
+      }
+    }
+
+    for (let i = 0; i < rows.length; i++) {
+      const r      = rows[i];
+      const player = String(cell(r, GL.Player)||'').trim();
+      const ymd    = parseDate(cell(r, GL.Date));
+      if (!player || !ymd) continue;
+
+      const school     = String(cell(r, GL.School)||'').trim();
+      const conf       = String(cell(r, GL.Conference)||'').trim();
+      const team       = String(cell(r, GL.Team)||'').trim();   // blank = non-league player
+      const gameNumber = String(cell(r, GL.GameNumber)||'');
+      const pra   = Number(cell(r, GL.PRA))||0;
+      const pts   = Number(cell(r, GL.Points))||0;
+      const reb   = Number(cell(r, GL.Rebounds))||0;
+      const ast   = Number(cell(r, GL.Assists))||0;
+      const mins  = Number(cell(r, GL.Minutes))||0;
+      const isDNP = gameNumber === 'DNP';
+      const g = { ymd, opponent: String(cell(r, GL.Opponent)||'').trim(), gameNumber };
+
+      // Per-game label: league rows keep their roster status/team; everything else is a Free Agent.
+      const rawStatus = String(cell(r, GL.RosterStatus)||'').trim();
+      const dayStatus = team ? (rawStatus || 'Free Agent')
+                             : ((rawStatus === 'Starter' || rawStatus === 'Bench') ? rawStatus : 'Free Agent');
+      const dayTeam   = team || (dayStatus === 'Free Agent' ? 'Free Agent' : 'All Games');
+      // Key on player+school to uniquely identify same-name players at different schools
+      const aggKey = player + '|' + school;
+
+      addToAgg(allAgg, allSeasonRawLogs, aggKey, player, school, conf, dayTeam, dayStatus, g, pra, pts, reb, ast, mins, isDNP);
+
+      // Free agents: skip anyone currently Starter/Bench on a league roster
+      if (activeRosterSet.has(player)) continue;
+      addToAgg(agg, faRawLogs, aggKey, player, school, conf, 'Free Agent', 'Free Agent', g, pra, pts, reb, ast, mins, isDNP);
+    }
+
+    function toPlayerStatsLike(p, teamOverride, statusOverride, draftRoundOverride) {
+      const gp   = p.gp || 1;
+      const prag = p.totalPRA / gp;
+      return {
+        Player:       p.Player,
+        AggKey:       p.AggKey,
+        School:       p.School,
+        Conference:   p.Conference,
+        Team:         teamOverride ?? p.Team,
+        RosterStatus: statusOverride ?? p.RosterStatus,
+        DraftRound:   draftRoundOverride ?? p.DraftRound,
+        GamesPlayed:  p.gp,
+        GPplusDNP:    p.gpAll,
+        TotalPRA:     p.totalPRA,
+        PRAG:         Math.round(prag * 100) / 100,
+        PPG:          Math.round(p.totalPts / gp * 100) / 100,
+        RPG:          Math.round(p.totalReb / gp * 100) / 100,
+        APG:          Math.round(p.totalAst / gp * 100) / 100,
+        Points:       p.totalPts,
+        Rebounds:     p.totalReb,
+        Assists:      p.totalAst,
+      };
+    }
+
+    allSeasonStats = Object.values(allAgg).map(p => toPlayerStatsLike(p));
+
+    // Convert to playerStats-compatible objects, apply threshold
+    freeAgents = Object.values(agg)
+      .map(p => toPlayerStatsLike(p))
+      .filter(p => p.PRAG >= FA_MIN_PRAG);
+
+    console.log(`Free agents loaded: ${freeAgents.length} players above ${FA_MIN_PRAG} PRA/G`);
+    faLoaded  = true;
+    faLoading = false;
+    renderStats();
+  } catch(e) {
+    console.error('FA fetch error:', e);
+    faLoading = false;
+    renderStats();
+  }
+}
+
+function cell(row, idx) {
+  if (!row || !row.c || idx >= row.c.length || !row.c[idx]) return null;
+  return row.c[idx].v ?? null;
+}
+
+function parseDate(v) {
+  if (!v) return null;
+  if (typeof v === 'string') {
+    const m = v.match(/^Date\((\d+),(\d+),(\d+)\)$/);
+    if (m) return `${m[1]}-${String(+m[2]+1).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`;
+    if (/^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0,10);
+  }
+  return null;
+}
+
+function fmtDate(ymd) {
+  if (!ymd) return '';
+  const d = new Date(ymd + 'T12:00:00Z');
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', timeZone:'UTC' });
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────────
+async function init() {
+  updateHeaderTeam();
+  setApp(loadingHTML());
+  loadErrors = [];
+  indexes = emptyIndexes();
+
+  const errors = [];
+  const [glRes, stRes, psRes, msRes, drRes, txRes, drSuppRes] = await Promise.allSettled([
+    fetchLeagueGameLog(),
+    gvizFetch('api_standings'),
+    gvizFetch('Player Stats (locked)'),
+    gvizFetch('master_schedule'),
+    gvizFetch('Draft'),
+    gvizFetch('Transaction Log'),
+    gvizFetchRange('Draft', DRAFT_SUPP_RANGE),
+  ]);
+
+  // Game Log (locked)
+  if (glRes.status === 'fulfilled') {
+    gameLog = [];
+    for (let i = 0; i < glRes.value.length; i++) {
+      const r = glRes.value[i];
+      const player = cell(r, GL.Player);
+      const ymd    = parseDate(cell(r, GL.Date));
+      if (!player || !ymd || !cell(r, GL.Team)) continue; // league rows only; blank Team = non-league player
+      gameLog.push({
+        _ymd: ymd,
+        Team: cell(r, GL.Team),         Player: player,
+        School: cell(r, GL.School),     Conference: cell(r, GL.Conference),
+        Opponent: cell(r, GL.Opponent), GameNumber: cell(r, GL.GameNumber),
+        RosterStatus: cell(r, GL.RosterStatus), Minutes: cell(r, GL.Minutes),
+        Points: cell(r, GL.Points),     Rebounds: cell(r, GL.Rebounds),
+        Assists: cell(r, GL.Assists),   PRA: cell(r, GL.PRA),
+      });
+    }
+  } else { gameLog = []; errors.push('Game Log failed'); console.error(glRes.reason); }
+
+  // api_standings
+  if (stRes.status === 'fulfilled') {
+    standings = [];
+    for (let i = 0; i < stRes.value.length; i++) {
+      const r = stRes.value[i];
+      const rank = cell(r, ST.Rank), team = cell(r, ST.Team);
+      if (rank == null || isNaN(Number(rank)) || !team) continue;
+      standings.push({ Rank: Number(rank), Team: String(team),
+                       TotalPRA: cell(r, ST.TotalPRA), PRABehind: cell(r, ST.PRABehind) });
+    }
+    allSickos = standings.map(r => r.Team);
+  } else { standings = []; errors.push('Standings failed'); console.error(stRes.reason); }
+
+  // Player Stats (locked) — skip 2 rows (meta + header)
+  if (psRes.status === 'fulfilled') psResCache = psRes.value;
+  if (psRes.status === 'fulfilled') {
+    playerStats = [];
+    for (let i = PS_SKIP; i < psRes.value.length; i++) {
+      const r = psRes.value[i];
+      const player = cell(r, PS.Player), team = cell(r, PS.Team);
+      if (!player || !team) continue;
+      playerStats.push({
+        Team: String(team),           Player: String(player),
+        School: cell(r, PS.School),   Conference: cell(r, PS.Conference),
+        DraftRound: cell(r, PS.DraftRound),
+        RosterStatus: cell(r, PS.RosterStatus),
+        GamesPlayed: cell(r, PS.GamesPlayed), GPplusDNP: cell(r, PS.GPplusDNP),
+        TotalPRA: cell(r, PS.TotalPRA),       PRAG: cell(r, PS.PRAG),
+        PPG: cell(r, PS.PPG), RPG: cell(r, PS.RPG), APG: cell(r, PS.APG),
+        Points: cell(r, PS.Points), Rebounds: cell(r, PS.Rebounds), Assists: cell(r, PS.Assists),
+      });
+    }
+  } else { playerStats = []; errors.push('Player Stats failed'); console.error(psRes.reason); }
+
+  // ── master_schedule → location map ──
+  // cols: 5=Date, 6=Away, 7=Home, 9=Location
+  // key: sorted([away,home]).join('|') + '|' + YYYY-MM-DD
+  if (msRes.status === 'fulfilled') {
+    for (let i = 0; i < msRes.value.length; i++) {
+      const r    = msRes.value[i];
+      const away = String(cell(r,6)||'').trim();
+      const home = String(cell(r,7)||'').trim();
+      const loc  = String(cell(r,9)||'').trim();
+      const ymd  = parseDate(cell(r,5));
+      if (!away || !home || !ymd) continue;
+      const key = [away,home].sort().join('|') + '|' + ymd;
+      if (loc) locationMap[key] = loc;
+      awayHomeMap[key] = { away, home };
+    }
+  }
+
+  // ── Draft ──
+  // gviz consumes row 0 as cols, data starts at rows[0]
+  // Skip rows where Round === 'Month' (repeated header rows)
+  // Cols: 0=OverallPick, 1=Round, 2=Pick, 3=Team, 4=Player, 5=School, 6=Conference
+  if (drRes.status === 'fulfilled') {
+    draftData = [];
+    const validRounds = new Set(['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','Nov','Dec','Jan','Feb']);
+    let suppCount = 0;
+    for (let i = 0; i < drRes.value.length; i++) {
+      const r       = drRes.value[i];
+      const overall = String(cell(r,0)||'').trim();
+      const round   = String(cell(r,1)||'').trim();
+      // Skip Month header rows (where overall = 'Overall Pick') and invalid rounds
+      if (overall === 'Overall Pick' || overall === '' || !validRounds.has(round)) continue;
+      const team   = cell(r,3);
+      const player = String(cell(r,4)||'').trim();
+      if (!team) continue;
+      const isSupp = ['Nov','Dec','Jan','Feb'].includes(round);
+      if (isSupp) suppCount++;
+      draftData.push({
+        overall,
+        round,
+        pick:   String(cell(r,2)||'').trim(),
+        team:   String(team),
+        player: player === '-' ? '' : player,
+        school: String(cell(r,5)||'').trim(),
+        conf:   String(cell(r,6)||'').trim(),
+      });
+    }
+    console.log(`Draft: ${draftData.length} total picks, ${suppCount} supplemental`);
+  } else { draftData = []; console.error('Draft error:', drRes.reason); }
+
+  // ── Supplemental Draft (Nov/Dec/Jan/Feb) ──
+  // Fetched as a separate range (DRAFT_SUPP_RANGE) because gviz truncates at the "Month" header row
+  // We use numeric rounds 19/20/21/22 internally, display as Nov/Dec/Jan/Feb
+  const suppRoundMap  = { 'Nov':'19', 'Dec':'20', 'Jan':'21', 'Feb':'22' };
+  if (drSuppRes.status === 'fulfilled' && draftData) {
+    let suppAdded = 0;
+    for (let i = 0; i < drSuppRes.value.length; i++) {
+      const r       = drSuppRes.value[i];
+      const overall = String(cell(r,0)||'').trim();
+      const roundRaw = String(cell(r,1)||'').trim();
+      // Skip Month header rows
+      if (overall === 'Overall Pick' || overall === '' || roundRaw === 'Month' || roundRaw === 'Round') continue;
+      const numRound = suppRoundMap[roundRaw];
+      if (!numRound) continue; // not a valid supplemental round
+      const team   = cell(r,3);
+      const player = String(cell(r,4)||'').trim();
+      if (!team) continue;
+      draftData.push({
+        overall,
+        round:  numRound,   // store as '19','20','21','22'
+        pick:   String(cell(r,2)||'').trim(),
+        team:   String(team),
+        player: player === '-' ? '' : player,
+        school: String(cell(r,5)||'').trim(),
+        conf:   String(cell(r,6)||'').trim(),
+      });
+      suppAdded++;
+    }
+    console.log(`Supplemental draft picks added: ${suppAdded}`);
+  }
+  // Row 0 of sheet ("All","Any",...) is consumed by gviz as column headers
+  // Row 1 (blank) → gviz rows[0]
+  // Row 2 (real header: Team,Player,...) → gviz rows[1]  
+  // Row 3+ (data) → gviz rows[2+]
+  // BUT: LET formulas may render differently in gviz — try both skip=1 and skip=2
+  // Cols: 0=Team, 1=Player, 2=School, 3=Conference, 4=Transaction, 5=Type, 6=Date
+  if (txRes.status === 'fulfilled') {
+    txnData = [];
+    const rows = txRes.value;
+    // Find the first row that looks like real data (Team is a manager name)
+    const managerSet = new Set(allSickos);
+    let dataStart = 0;
+    for (let i = 0; i < Math.min(rows.length, 5); i++) {
+      const maybeTeam = String(cell(rows[i], 0)||'').trim();
+      if (managerSet.has(maybeTeam)) { dataStart = i; break; }
+      // Also accept if it looks like data (has a date in col 6)
+      const maybeDate = parseDate(cell(rows[i], 6));
+      if (maybeDate) { dataStart = i; break; }
+    }
+    for (let i = dataStart; i < rows.length; i++) {
+      const r      = rows[i];
+      const team   = cell(r,0);
+      const player = cell(r,1);
+      const txn    = cell(r,4);
+      const date   = parseDate(cell(r,6));
+      if (!team || !player || !txn || !date) continue;
+      const teamStr = String(team).trim();
+      if (teamStr === 'Team' || teamStr === 'All') continue; // skip header rows
+      txnData.push({
+        team:   teamStr,
+        player: String(player),
+        school: String(cell(r,2)||''),
+        conf:   String(cell(r,3)||''),
+        txn:    String(txn),
+        type:   String(cell(r,5)||''),
+        date,
+      });
+    }
+    txnData.sort((a,b) => b.date.localeCompare(a.date));
+    console.log(`Loaded ${txnData.length} transactions (dataStart=${dataStart})`);
+  } else { txnData = []; console.error('Transactions error:', txRes.reason); }
+
+  loadErrors = errors;
+  rosterTeamFilter = allSickos.includes(rosterTeamFilter) ? rosterTeamFilter
+                   : allSickos.includes(myTeam)           ? myTeam
+                   : allSickos[0] || null;
+  buildIndexes();
+  scoreFilter = myTeam || 'ALL';
+  renderCurrentTab(loadErrors);
+}
+
+// ─── NAVIGATION ────────────────────────────────────────────────────────────────
+function pushNav(fn) { navStack.push(fn); }
+function navBack() {
+  navStack.pop(); // discard current
+  const prev = navStack.pop();
+  if (prev) prev(); else renderCurrentTab();
+}
+
+// ─── TAB SWITCHING ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  navStack = [];
+  document.querySelectorAll('[data-tab]').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tab);
+    if (el.dataset.tab === tab) {
+      // Scroll active tab into view smoothly
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  });
+  document.getElementById('date-nav').style.display = tab === 'scoreboard' ? 'flex' : 'none';
+  renderCurrentTab();
+}
+
+function renderCurrentTab(errors) {
+  errors = errors || loadErrors;
+  try {
+    if      (currentTab === 'scoreboard')   renderScoreboard(errors);
+    else if (currentTab === 'standings')    renderStandings();
+    else if (currentTab === 'roster')       renderRoster();
+    else if (currentTab === 'stats')        renderStats();
+    else if (currentTab === 'draft')        renderDraft();
+    else if (currentTab === 'transactions') renderTransactions();
+  } catch(e) {
+    console.error('Render error:', e);
+    setApp(`<div class="error-banner">Render error: ${esc(e.message)}</div>`);
+  }
+}
+
+// ─── DATE NAV ──────────────────────────────────────────────────────────────────
+function updateDateUI() {
+  const d = new Date(viewDate + 'T12:00:00Z');
+  document.getElementById('date-label').textContent =
+    d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', timeZone:'UTC' });
+  document.getElementById('date-prev').toggleAttribute('disabled', viewDate <= SEASON_START);
+  document.getElementById('date-next').toggleAttribute('disabled', viewDate >= SEASON_END);
+}
+
+function shiftDate(delta) {
+  const d = new Date(viewDate + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + delta);
+  const ymd = d.toISOString().slice(0,10);
+  if (ymd < SEASON_START || ymd > SEASON_END) return;
+  viewDate = ymd; updateDateUI(); renderScoreboard();
+}
+
+function openDatePicker() {
+  const inp = document.getElementById('date-picker-input');
+  inp.value = viewDate;
+  try { inp.showPicker(); } catch(_) { inp.click(); }
+}
+
+function onPickerChange(val) {
+  if (!val) return;
+  viewDate = val < SEASON_START ? SEASON_START : val > SEASON_END ? SEASON_END : val;
+  updateDateUI(); renderScoreboard();
+}
+
+// ─── SCOREBOARD ────────────────────────────────────────────────────────────────
+function renderScoreboard(errors) {
+  updateDateUI();
+  if (!gameLog) { setApp(loadingHTML()); return; }
+
+  const dayRows  = indexes.gameLogByDate.get(viewDate) || [];
+  const chips    = ['ALL', ...allSickos].map(t => {
+    const label = t === 'ALL' ? 'All' : t;
+    const active = scoreFilter === t ? 'active' : '';
+    return `<div class="team-chip ${active}" data-action="score-filter" data-team="${attr(t)}">${esc(label)}</div>`;
+  }).join('');
+
+  const filtered    = scoreFilter === 'ALL' ? dayRows : dayRows.filter(r => r.Team === scoreFilter);
+  const starterRows = filtered.filter(r => r.RosterStatus === 'Starter');
+  const todayPRA    = starterRows.reduce((s, r) => s + (Number(r.PRA) || 0), 0);
+  const playedCnt   = starterRows.filter(r => String(r.GameNumber) !== 'DNP').length;
+
+  const games = {};
+  filtered.forEach(r => {
+    const key = [r.School||'', r.Opponent||''].sort().join('|||');
+    if (!games[key]) {
+      // Look up canonical away/home from master_schedule
+      const ahKey = [r.School||'', r.Opponent||''].sort().join('|') + '|' + viewDate;
+      const ah    = awayHomeMap[ahKey];
+      const away  = ah ? ah.away : r.School;
+      const home  = ah ? ah.home : r.Opponent;
+      games[key]  = { away, home, players: [] };
+    }
+    games[key].players.push(r);
+  });
+
+  let cards = '';
+  const matchupList = Object.values(games);
+  if (!matchupList.length) {
+    const anyToday = dayRows.length;
+    cards = emptyStateHTML(
+      anyToday ? 'Search' : 'Calendar',
+      anyToday ? 'No matching players' : 'No games on this date',
+      `${anyToday ? `No players from <strong>${esc(scoreFilter)}</strong><br>played on this date.`
+                  : 'No games were played on this date.'}
+       <br><span class="state-subtle">Use the date arrows to find a game day.</span>`
+    );
+  } else {
+    matchupList.forEach(g => {
+      g.players.sort((a, b) => {
+        const ord = { Starter:0, Bench:1 };
+        const d = (ord[a.RosterStatus]??2) - (ord[b.RosterStatus]??2);
+        return d !== 0 ? d : (Number(b.PRA)||0) - (Number(a.PRA)||0);
+      });
+      const playerRows = g.players.map(p => {
+        const isDNP  = String(p.GameNumber) === 'DNP';
+        const pra    = isDNP ? 0 : (Number(p.PRA) || 0);
+        const status = p.RosterStatus || '';
+        const sCls   = isDNP ? 'status-dnp' : status==='Starter' ? 'status-starter' : status==='Bench' ? 'status-bench' : 'status-inactive';
+        const praCls = isDNP ? '' : pra>=40 ? 'pra-fire' : pra>=28 ? 'pra-hot' : '';
+        const teamTag = scoreFilter === 'ALL'
+          ? `<span style="font-size:10px;color:var(--muted)"> · ${esc(p.Team||'')}</span>` : '';
+        return `<div class="player-row" data-action="view-player" data-team="${attr(p.Team||'')}" data-player="${attr(p.Player||'')}" style="cursor:pointer">
+          <div class="player-info" style="pointer-events:none">
+            <div class="player-name">${esc(p.Player||'')}${teamTag}</div>
+            <div class="player-school">${schoolTag(p.School||'')} ${esc(p.Conference||'')}</div>
+          </div>
+          <span class="player-status ${sCls}" style="pointer-events:none">${esc(status)}</span>
+          <div class="pra-block" style="pointer-events:none">
+            ${isDNP ? '<div class="pra-big" style="font-size:22px;color:var(--red)">DNP</div>'
+                    : '<div class="pra-big ' + praCls + '">' + (pra||'–') + '</div>' +
+                      (pra>0?'<div class="pra-breakdown">' + num(p.Points) + 'p ' + num(p.Rebounds) + 'r ' + num(p.Assists) + 'a</div>':'')}
+          </div>
+        </div>`;
+      }).join('');
+      const venueKey = [g.away||'', g.home||''].sort().join('|') + '|' + viewDate;
+      const venue    = locationMap[venueKey] || '';
+      cards += `<div class="game-card fade-in">
+        <div class="game-card-header">
+          <div class="game-matchup">${schoolTag(g.away||'')} <span style="font-size:10px;color:var(--muted);font-weight:400">vs</span> ${schoolTag(g.home||'')}</div>
+          ${venue ? `<div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:var(--font-mono);letter-spacing:0.2px">${esc(venue)}</div>` : ''}
+        </div>
+        ${playerRows}</div>`;
+    });
+  }
+
+  const errBanner = errorBannerHTML(errors);
+  const bar = (filtered.length && scoreFilter !== 'ALL') ? `<div class="totals-bar">
+    <div><div class="totals-label">${esc(scoreFilter.toUpperCase())}</div>
+         <div class="totals-sub">${starterRows.length} starters · ${playedCnt} played</div></div>
+    <div style="text-align:right"><div class="totals-val">${fmtInt(todayPRA)}</div><div class="totals-sub">Starter PRA</div></div>
+  </div>` : '';
+
+  setApp(`<div class="fade-in">${errBanner}<div class="team-selector">${chips}</div>${bar}${cards}</div>`);
+}
+
+// ─── STANDINGS ─────────────────────────────────────────────────────────────────
+function renderStandings() {
+  navStack = [];
+  if (!standings) { setApp(loadingHTML()); return; }
+  if (!standings.length) {
+    setApp(emptyStateHTML('Standings', 'Standings unavailable', 'No standings data was loaded.', 'Retry data load', 'retry-init'));
+    return;
+  }
+  const rows = standings.map((r, i) => {
+    const isMe = r.Team === myTeam;
+    return `<div class="standings-row ${isMe?'is-me':''}" data-action="view-team" data-team="${attr(r.Team)}">
+      <div class="rank ${i<3?'top3':''}">${r.Rank}</div>
+      <div class="standing-name">${esc(r.Team)}${isMe?' <span style="color:var(--accent)">★</span>':''}</div>
+      <div style="text-align:right;pointer-events:none">
+        <div class="standing-total">${fmtInt(r.TotalPRA)}</div>
+        ${r.PRABehind ? `<div class="standing-behind">–${fmtInt(r.PRABehind)}</div>`
+                      : `<div class="standing-leader">LEADER</div>`}
+      </div>
+    </div>`;
+  }).join('');
+  setApp(`<div class="fade-in">
+    ${errorBannerHTML(loadErrors)}
+    <div class="section-header"><div class="section-title">STANDINGS</div><div class="badge">Final · tap for roster</div></div>
+    ${rows}
+    <div class="data-note">PRA = Points + Rebounds + Assists · Starter games only</div>
+  </div>`);
+}
+
+// ─── TEAM ROSTER ───────────────────────────────────────────────────────────────
+function rosterRowsForTeam(team) {
+  return indexes.playersByTeam.get(team) || [];
+}
+
+function rosterCardsHTML(team, rows) {
+  if (!rows.length) {
+    return emptyStateHTML('Roster', 'No players found', `No roster rows were loaded for <strong>${esc(team)}</strong>.`);
+  }
+
+  return rows.map(r => {
+    const sCls = r.RosterStatus==='Starter'?'status-starter':r.RosterStatus==='Bench'?'status-bench':'status-inactive';
+    return `<div class="stats-card" data-action="view-player" data-team="${attr(team)}" data-player="${attr(r.Player)}">
+      <div class="stat-player-info">
+        <div class="stat-player-name">${esc(r.Player)}</div>
+        <div class="stat-player-meta">${schoolTag(r.School||'')} ${esc(r.Conference||'')}
+          <span class="player-status ${sCls}" style="padding:1px 6px;font-size:9px;margin-left:4px">${esc(r.RosterStatus||'')}</span>
+        </div>
+        <div class="tap-hint">tap for game log</div>
+      </div>
+      <div class="stat-nums">
+        <div class="stat-col"><div class="stat-val" style="color:var(--accent)">${fmtInt(r.TotalPRA)}</div><div class="stat-key">PRA</div></div>
+        <div class="stat-col"><div class="stat-val">${num(r.PRAG).toFixed(1)}</div><div class="stat-key">PRA/G</div></div>
+        <div class="stat-col"><div class="stat-val">${num(r.GPplusDNP)}</div><div class="stat-key">GP</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function rosterSummaryHTML(team, rows) {
+  const standingsRow = indexes.standingsByTeam.get(team);
+  const totalPRA     = standingsRow ? num(standingsRow.TotalPRA) : rows.reduce((s,r) => s + num(r.TotalPRA), 0);
+  const totalGP      = rows.filter(r => r.RosterStatus==='Starter')
+                           .reduce((s,r) => s+num(r.GPplusDNP), 0);
+  return `<div class="totals-bar">
+    <div><div class="totals-label">Season Total</div>
+         <div class="totals-sub">${totalGP} starter games (incl. DNPs)</div></div>
+    <div style="text-align:right"><div class="totals-val">${fmtInt(totalPRA)}</div>
+         <div class="totals-sub">Starter PRA</div></div>
+  </div>`;
+}
+
+function renderRoster() {
+  navStack = [];
+  if (!playerStats) { setApp(loadingHTML()); return; }
+  if (!allSickos.length) {
+    setApp(emptyStateHTML('Roster', 'No teams loaded', 'Roster data depends on standings and player stats.', 'Retry data load', 'retry-init'));
+    return;
+  }
+
+  const selectedTeam = allSickos.includes(rosterTeamFilter) ? rosterTeamFilter
+                     : allSickos.includes(myTeam)           ? myTeam
+                     : allSickos[0];
+  rosterTeamFilter = selectedTeam;
+  const allRows = rosterRowsForTeam(selectedTeam);
+  const rows = allRows.filter(r => matchesPlayerSearch(r, rosterSearch));
+  const isMe = selectedTeam === myTeam;
+  const teamOpts = allSickos.map(t =>
+    `<option value="${attr(t)}" ${selectedTeam===t?'selected':''}>${esc(t)}${t===myTeam?' ★':''}</option>`
+  ).join('');
+
+  setApp(`<div class="fade-in">
+    ${errorBannerHTML(loadErrors)}
+    <div class="section-header">
+      <div class="section-title">ROSTERS</div>
+      <div class="badge">${isMe ? 'My Team' : esc(selectedTeam)}</div>
+    </div>
+    <div class="seg-control" style="margin-bottom:12px;position:relative">
+      <select class="filter-select" id="roster-team-select" style="width:100%;padding-right:24px">${teamOpts}</select>
+      <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:10px">▾</span>
+    </div>
+    <input class="search-input" id="roster-search-input" type="search" placeholder="Search this roster" value="${attr(rosterSearch)}" autocomplete="off">
+    ${rosterSummaryHTML(selectedTeam, allRows)}
+    ${rosterCardsHTML(selectedTeam, rows)}
+  </div>`);
+}
+
+function viewTeam(team) {
+  pushNav(() => renderStandings());
+  pushNav(() => viewTeam(team));
+
+  const rows = rosterRowsForTeam(team);
+  const isMe = team === myTeam;
+
+  setApp(`<div class="fade-in">
+    <button class="back-btn" data-action="back">← Standings</button>
+    <div class="section-header"><div class="section-title">${esc(team)}${isMe?' ★':''}</div></div>
+    ${rosterSummaryHTML(team, rows)}
+    ${rosterCardsHTML(team, rows)}
+  </div>`);
+}
+
+// ─── PLAYER GAME LOG ───────────────────────────────────────────────────────────
+function viewPlayerLog(team, playerArg) {
+  pushNav(() => viewPlayerLog(team, playerArg));
+
+  const isFA = team === 'Free Agent';
+  const isAllGamesLog = playerArg.startsWith('all:');
+
+  // FA cards pass 'fa:player|school'; All Games cards pass 'all:player|school'
+  let player    = playerArg;
+  let aggKey    = null;
+  if (isFA && playerArg.startsWith('fa:')) {
+    aggKey = playerArg.slice(3);
+    const faEntry = freeAgents.find(r => r.AggKey === aggKey);
+    player = faEntry ? faEntry.Player : aggKey.split('|')[0];
+  } else if (isAllGamesLog) {
+    aggKey = playerArg.slice(4);
+    const allEntry = allSeasonStats.find(r => r.AggKey === aggKey);
+    player = allEntry ? allEntry.Player : aggKey.split('|')[0];
+  }
+
+  // For free agents and All Games mode, use the full-season master log; otherwise use Sicko gameLog
+  const logs = isFA
+    ? (faRawLogs[aggKey] || faRawLogs[player] || []).sort((a,b) => (a._ymd||'').localeCompare(b._ymd||''))
+    : isAllGamesLog
+      ? (allSeasonRawLogs[aggKey] || []).sort((a,b) => (a._ymd||'').localeCompare(b._ymd||''))
+      : (indexes.playerLogsByTeamPlayer.get(teamPlayerKey(team, player)) || []);
+
+  const totalPRA = (isFA || isAllGamesLog)
+    ? logs.reduce((s,r) => s+(Number(r.PRA)||0), 0)
+    : logs.filter(r => r.RosterStatus==='Starter').reduce((s,r) => s+(Number(r.PRA)||0), 0);
+  const gp = (isFA || isAllGamesLog)
+    ? logs.filter(r => String(r.GameNumber) !== 'DNP').length
+    : logs.filter(r => r.RosterStatus==='Starter').length;
+
+  const rows = logs.map(r => {
+    const isDNP  = String(r.GameNumber) === 'DNP';
+    const pra    = Number(r.PRA) || 0;
+    const status = r.RosterStatus || '';
+    // In All Games mode, show the per-game roster status: Starter/Bench when
+    // that game is in the Sickos log; otherwise show Free Agent in grey.
+    const sCls   = status==='Starter'?'status-starter':status==='Bench'?'status-bench':status==='Free Agent'?'status-fa':'status-inactive';
+    const showBadge = isAllGamesLog ? !!status : (!isFA && status && status !== 'Free Agent');
+    const praCls = isDNP?'pra-dnp':pra>=40?'pra-fire':pra>=28?'pra-hot':'';
+    return `<div class="gl-row ${isDNP?'gl-dnp':''}">
+      <div class="gl-date">${fmtDate(r._ymd)}</div>
+      <div class="gl-mid">
+        <div class="gl-opp">${schoolTag(r.Opponent||'')}</div>
+        <div class="gl-meta">
+          ${showBadge?`<span class="player-status ${sCls}" style="padding:1px 5px;font-size:9px">${esc(status)}</span>`:''}
+          ${!isDNP?`<span class="gl-breakdown">${num(r.Minutes)}m · ${num(r.Points)}p ${num(r.Rebounds)}r ${num(r.Assists)}a</span>`:''}
+        </div>
+      </div>
+      <div class="gl-pra ${praCls}">${isDNP?'<span style="font-size:18px;color:var(--red)">DNP</span>':(pra||'–')}</div>
+    </div>`;
+  }).join('');
+
+  setApp(`<div class="fade-in">
+    <button class="back-btn" data-action="back">← Back</button>
+    <div class="section-header">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:16px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(player)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          ${(()=>{
+            if (isFA) {
+              const fa = aggKey
+                ? freeAgents.find(r => r.AggKey === aggKey)
+                : freeAgents.find(r => r.Player === player);
+              return fa ? `${schoolTag(fa.School||'')} <span>${esc(fa.Conference||'')}</span>` : '';
+            }
+            const ps = (playerStats||[]).find(r=>r.Player===player&&r.Team===team);
+            return ps ? `${schoolTag(ps.School||'')} <span>${esc(ps.Conference||'')}</span>` : '';
+          })()}
+        </div>
+      </div>
+    </div>
+    <div class="totals-bar">
+      <div><div class="totals-label">${esc(isFA ? 'Free Agent' : isAllGamesLog ? 'All Games' : team)}</div>
+           <div class="totals-sub">${gp} games played · ${logs.length} total</div></div>
+      <div style="text-align:right"><div class="totals-val">${fmtInt(totalPRA)}</div>
+           <div class="totals-sub">${(isFA || isAllGamesLog) ? 'Total PRA' : 'Starter PRA'}</div></div>
+    </div>
+    <div class="game-card">${rows||'<div class="empty-state"><p>No games found</p></div>'}</div>
+  </div>`);
+}
+
+// ─── STATS ─────────────────────────────────────────────────────────────────────
+function rosterPlayersForStatsScope() {
+  if (statsScope !== 'all' || !faLoaded) return [...playerStats];
+
+  const allByKey = new Map(allSeasonStats.map(p => [p.AggKey, p]));
+
+  return playerStats.map(r => {
+    const aggKey = String(r.Player||'').trim() + '|' + String(r.School||'').trim();
+    const full = allByKey.get(aggKey);
+    if (!full) return r;
+
+    return {
+      ...r,
+      AggKey:       aggKey,
+      GamesPlayed:  full.GamesPlayed,
+      GPplusDNP:    full.GPplusDNP,
+      TotalPRA:     full.TotalPRA,
+      PRAG:         full.PRAG,
+      PPG:          full.PPG,
+      RPG:          full.RPG,
+      APG:          full.APG,
+      Points:       full.Points,
+      Rebounds:     full.Rebounds,
+      Assists:      full.Assists,
+      _allGames:    true,
+    };
+  });
+}
+
+function renderStats() {
+  navStack = [];
+  if (!playerStats) { setApp(loadingHTML()); return; }
+
+  // Merge free agents if enabled. In All Games mode, rostered players keep their
+  // Sicko metadata, but their stats are swapped to full-season master-log totals.
+  const rosterPlayers = rosterPlayersForStatsScope();
+  const allPlayers = (faEnabled && faLoaded) ? [...rosterPlayers, ...freeAgents] : [...rosterPlayers];
+
+  // Team dropdown — Free Agent first (after All), then managers sorted by last name
+  const sortedSickos = [...allSickos].sort((a,b) => {
+    const lastA = a.split(' ').pop(), lastB = b.split(' ').pop();
+    if (lastA !== lastB) return lastA.localeCompare(lastB);
+    return a.localeCompare(b);
+  });
+  const teamChoices = ['ALL', ...(faLoaded ? ['Free Agent'] : []), ...sortedSickos];
+  const teamOpts = teamChoices.map(t =>
+    `<option value="${attr(t)}" ${statTeamFilter===t?'selected':''}>${esc(t==='ALL'?'All Teams':t)}</option>`).join('');
+
+  // Conference list from all visible players
+  const confs = ['ALL', ...Array.from(new Set(allPlayers.map(r=>r.Conference||'').filter(Boolean))).sort()];
+  const confOpts = confs.map(c =>
+    `<option value="${attr(c)}" ${statConfFilter===c?'selected':''}>${esc(c==='ALL'?'All Conferences':c)}</option>`).join('');
+
+  let rows = statTeamFilter==='ALL' ? [...allPlayers] : allPlayers.filter(r => r.Team===statTeamFilter);
+  if (statConfFilter !== 'ALL') rows = rows.filter(r => r.Conference === statConfFilter);
+  if (statSearch.trim()) rows = rows.filter(r => matchesPlayerSearch(r, statSearch));
+
+  const sortKeys = {
+    total:'TotalPRA', pts:'Points', reb:'Rebounds', ast:'Assists',
+    prag:'PRAG', ppg:'PPG', rpg:'RPG', apg:'APG',
+  };
+  const key = sortKeys[statSort] || 'TotalPRA';
+  rows.sort((a,b) => (Number(b[key])||0) - (Number(a[key])||0));
+
+  const isTotals = statView === 'total';
+  const limit    = faEnabled ? 120 : 80;
+
+  const cards = rows.slice(0, limit).map(r => {
+    const isMe = r.Team === myTeam;
+    const isFA = r.Team === 'Free Agent';
+    const sCls = isFA                   ? 'status-inactive'
+               : r.RosterStatus==='Starter' ? 'status-starter'
+               : r.RosterStatus==='Bench'   ? 'status-bench'
+               :                              'status-inactive';
+    const statusLabel = isFA ? 'Free Agent' : (r.RosterStatus||'');
+    const teamLine    = isFA
+      ? `<span class="fa-badge">Free Agent</span>`
+      : `<span style="font-weight:700;color:var(--text)">${esc(r.Team)}</span> · ${esc(draftLabel(r.DraftRound))}`;
+
+    const cols = isTotals
+      ? `<div class="stat-col"><div class="stat-val" style="color:var(--accent)">${fmtInt(r.TotalPRA)}</div><div class="stat-key">PRA</div></div>
+         <div class="stat-col"><div class="stat-val sm">${fmtInt(r.Points)}</div><div class="stat-key">PTS</div></div>
+         <div class="stat-col"><div class="stat-val sm">${fmtInt(r.Rebounds)}</div><div class="stat-key">REB</div></div>
+         <div class="stat-col"><div class="stat-val sm">${fmtInt(r.Assists)}</div><div class="stat-key">AST</div></div>`
+      : `<div class="stat-col"><div class="stat-val" style="color:var(--accent)">${num(r.PRAG).toFixed(1)}</div><div class="stat-key">PRA/G</div></div>
+         <div class="stat-col"><div class="stat-val sm">${num(r.PPG).toFixed(1)}</div><div class="stat-key">PPG</div></div>
+         <div class="stat-col"><div class="stat-val sm">${num(r.RPG).toFixed(1)}</div><div class="stat-key">RPG</div></div>
+         <div class="stat-col"><div class="stat-val sm">${num(r.APG).toFixed(1)}</div><div class="stat-key">APG</div></div>`;
+
+    const dataPlayer = isFA ? 'fa:' + (r.AggKey||r.Player)
+                     : (statsScope === 'all' && faLoaded && r.AggKey) ? 'all:' + r.AggKey
+                     : r.Player;
+    return `<div class="stats-card ${isMe?'is-my-player':''} ${isFA?'is-fa':''}" data-action="view-player" data-team="${attr(r.Team)}" data-player="${attr(dataPlayer)}">
+      <div class="stat-player-info">
+        <div class="stat-player-name">${esc(r.Player)}</div>
+        <div class="stat-player-meta">${schoolTag(r.School||'')} ${esc(r.Conference||'')}
+          ${!isFA ? '<span class="player-status ' + sCls + '" style="padding:1px 5px;font-size:9px;margin-left:4px">' + esc(statusLabel) + '</span>' : ''}
+        </div>
+        <div class="stat-player-meta" style="margin-top:2px">${teamLine}</div>
+      </div>
+      <div class="stat-nums" style="gap:10px">${cols}</div>
+    </div>`;
+  }).join('');
+
+  // FA toggle — count filtered by conference only (not by team)
+  const faConfCount = faLoaded
+    ? (statConfFilter === 'ALL'
+        ? freeAgents.length
+        : freeAgents.filter(p => p.Conference === statConfFilter).length)
+    : 0;
+  const faToggleLabel = faLoading ? (faLoadingSource === 'all games' ? 'Loading all games…' : 'Loading free agents…')
+                      : !faEnabled ? 'Show free agents'
+                      : faLoaded   ? `Free agents (${fmtInt(faConfCount)} above ${FA_MIN_PRAG} PRA/G)`
+                      :              'Show free agents';
+  const faToggle = `<div class="fa-toggle-row">
+    <span class="fa-toggle-label ${faEnabled?'active':''}">${esc(faToggleLabel)}</span>
+    <label class="toggle-switch" data-action="toggle-fa">
+      <input type="checkbox" ${faEnabled?'checked':''} style="pointer-events:none">
+      <div class="toggle-track"></div>
+      <div class="toggle-thumb"></div>
+    </label>
+  </div>`;
+
+  const totalSorts = [['total','PRA'],['pts','PTS'],['reb','REB'],['ast','AST']];
+  const pergameSorts = [['prag','PRA/G'],['ppg','PPG'],['rpg','RPG'],['apg','APG']];
+  const sorts = isTotals ? totalSorts : pergameSorts;
+  const sortBtns = sorts.map(([s,label]) =>
+    `<button class="sort-btn ${statSort===s?'active':''}" data-action="set-stat-sort" data-sort="${attr(s)}">${esc(label)}</button>`
+  ).join('');
+
+  setApp(`<div class="fade-in">
+    ${errorBannerHTML(loadErrors)}
+    <div class="section-header">
+      <div class="section-title">PLAYER STATS</div>
+      <div class="seg-control" style="margin-bottom:0;width:238px;padding:2px;flex-shrink:0">
+        <button class="seg-btn ${statsScope==='sicko'?'active':''}" style="font-size:9px;padding:4px 3px;white-space:nowrap" data-action="set-stats-scope" data-scope="sicko">Sicko Games Only</button>
+        <button class="seg-btn ${statsScope==='all'?'active':''}" style="font-size:9px;padding:4px 3px;white-space:nowrap" data-action="set-stats-scope" data-scope="all">All Games</button>
+      </div>
+    </div>
+    ${faToggle}
+    <input class="search-input" id="stat-search-input" type="search" placeholder="Search players, teams, schools" value="${attr(statSearch)}" autocomplete="off">
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <div class="seg-control" style="flex:1;margin-bottom:0;position:relative">
+        <select class="filter-select" id="stat-team-select" style="width:100%;padding-right:24px">${teamOpts}</select>
+        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:10px">▾</span>
+      </div>
+      <div class="seg-control" style="flex:1;margin-bottom:0;position:relative">
+        <select class="filter-select" id="stat-conf-select" style="width:100%;padding-right:24px">${confOpts}</select>
+        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:10px">▾</span>
+      </div>
+    </div>
+    <div class="seg-control">
+      <button class="seg-btn ${isTotals?'active':''}" data-action="set-stat-view" data-view="total">Totals</button>
+      <button class="seg-btn ${!isTotals?'active':''}" data-action="set-stat-view" data-view="pergame">Per Game</button>
+    </div>
+    <div class="filter-row" style="margin-bottom:12px">
+      <span class="filter-label">Sort:</span>
+      ${sortBtns}
+    </div>
+    ${cards || emptyStateHTML('Stats', 'No players match', 'Try a different search, team, conference, or stats view.')}
+    ${rows.length>limit?`<div class="data-note">Showing top ${limit} · search or filter to narrow the list</div>`:''}
+  </div>`);
+}
+
+// ─── TEAM MODAL ────────────────────────────────────────────────────────────────
+function openTeamModal() {
+  document.getElementById('team-modal-options').innerHTML =
+    ['(None)',...allSickos].map(t => {
+      const sel = (myTeam===t)||(myTeam===null&&t==='(None)');
+      const textColor = darkMode ? '#f0e0c0' : '#2a1c08';
+      const bgColor   = darkMode ? '#342812'  : '#e8c98e';
+      return `<div class="modal-option ${sel?'selected':''}" data-action="select-my-team" data-team="${attr(t)}" style="color:${attr(textColor)};background:${attr(bgColor)}">
+        <span style="pointer-events:none;color:${attr(textColor)} !important;font-size:14px;font-weight:700;display:block;flex:1">${esc(t)}</span>
+        ${sel?`<span style="pointer-events:none;color:#c45508 !important;font-size:16px;flex-shrink:0">✓</span>`:''}
+      </div>`;
+    }).join('');
+  document.getElementById('team-modal').style.display = 'flex';
+}
+
+function selectMyTeam(t) {
+  myTeam = t==='(None)' ? null : t;
+  myTeam ? localStorage.setItem('sickos_team',myTeam) : localStorage.removeItem('sickos_team');
+  document.getElementById('team-modal').style.display = 'none';
+  rosterTeamFilter = myTeam || rosterTeamFilter;
+  scoreFilter = myTeam||'ALL';
+  updateHeaderTeam();
+  renderCurrentTab();
+}
+
+function updateHeaderTeam() {
+  document.getElementById('header-team-name').textContent = myTeam || 'My Team';
+}
+
+// ─── DRAFT ─────────────────────────────────────────────────────────────────────
+function jumpToRound(round) {
+  const el = document.getElementById('draft-round-' + round);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderDraft() {
+  navStack = [];
+  if (!draftData) { setApp(loadingHTML()); return; }
+
+  const suppRoundNums = ['19','20','21','22'];
+  const suppDisplayMap = {'19':'Nov','20':'Dec','21':'Jan','22':'Feb'};
+
+  // Build conference list from draft data
+  const draftConfs = ['ALL', ...Array.from(new Set(draftData.map(p=>p.conf).filter(Boolean))).sort()];
+  const teamOpts = ['ALL',...allSickos].map(t =>
+    `<option value="${attr(t)}" ${draftTeamFilter===t?'selected':''}>${esc(t==='ALL'?'All Teams':t)}</option>`).join('');
+  const confOpts = draftConfs.map(c =>
+    `<option value="${attr(c)}" ${draftConfFilter===c?'selected':''}>${esc(c==='ALL'?'All Conferences':c)}</option>`).join('');
+
+  // Apply filters
+  let filtered = [...draftData];
+  if (draftTeamFilter !== 'ALL') filtered = filtered.filter(p => p.team === draftTeamFilter);
+  if (draftConfFilter !== 'ALL') filtered = filtered.filter(p => p.conf === draftConfFilter);
+
+  // Round order - preserve original
+  const roundOrder = indexes.draftRoundOrder;
+
+  // Group filtered picks by round
+  const byRound = {};
+  filtered.forEach(p => { if (!byRound[p.round]) byRound[p.round] = []; byRound[p.round].push(p); });
+
+  // Jump buttons — rounds 1-22, display Nov/Dec/Jan/Feb for 19-22
+  const allRoundNums = Array.from({length:22}, (_,i) => String(i+1));
+  const jumpBtns = `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px">
+    ${allRoundNums.map(r => {
+      const disp = suppDisplayMap[r] || r;
+      return '<button class="sort-btn" style="padding:4px 9px;font-size:11px;min-width:0" data-action="jump-round" data-round="' + attr(r) + '">' + esc(disp) + '</button>';
+    }).join('')}
+  </div>`;
+
+  // Render sections
+  const sections = roundOrder.map(round => {
+    const picks = byRound[round];
+    if (!picks || picks.length === 0) return '';
+    picks.sort((a,b) => (Number(a.pick)||0) - (Number(b.pick)||0));
+    const isSupp = suppRoundNums.includes(round);
+    const label  = isSupp ? `${suppDisplayMap[round]} Supplemental Draft` : `Round ${round}`;
+    const total  = indexes.draftCountsByRound.get(round) || 0;
+    const badge  = picks.length < total ? `${picks.length} of ${total}` : `${total} picks`;
+
+    const rows = picks.map(p => {
+      const isMe   = p.team === myTeam;
+      const isPass = !p.player;
+      return `<div class="draft-row" ${isPass ? '' : 'data-action="view-player" data-team="' + attr(p.team) + '" data-player="' + attr(p.player) + '" style="cursor:pointer"'}>
+        <div class="draft-pick-num" style="pointer-events:none">#${esc(p.overall)}</div>
+        <div class="draft-player-info" style="pointer-events:none">
+          ${isPass ? '<div class="draft-player-name draft-pass">— pass —</div>'
+                   : '<div class="draft-player-name">' + esc(p.player) + '</div>'}
+          <div class="draft-player-meta">
+            ${isPass ? '' : schoolTag(p.school) + ' <span>' + esc(p.conf||'') + '</span>'}
+          </div>
+        </div>
+        <div class="draft-team ${isMe?'is-me':''}" style="pointer-events:none">${esc(p.team)}</div>
+      </div>`;
+    }).join('');
+
+    return `<div id="draft-round-${attr(round)}" class="draft-section-header" style="display:flex;align-items:center;justify-content:space-between">
+      <span>${esc(label)}</span><span style="font-size:10px">${esc(badge)}</span>
+    </div>${rows}`;
+  }).filter(Boolean).join('');
+
+  setApp(`<div class="fade-in">
+    ${errorBannerHTML(loadErrors)}
+    <div class="section-header">
+      <div class="section-title">Draft Board</div>
+      <div class="badge">${filtered.filter(p=>p.player).length} picks</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <div class="seg-control" style="flex:1;margin-bottom:0;position:relative">
+        <select class="filter-select" id="draft-team-select" style="width:100%;padding-right:24px">${teamOpts}</select>
+        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:10px">▾</span>
+      </div>
+      <div class="seg-control" style="flex:1;margin-bottom:0;position:relative">
+        <select class="filter-select" id="draft-conf-select" style="width:100%;padding-right:24px">${confOpts}</select>
+        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:10px">▾</span>
+      </div>
+    </div>
+    ${jumpBtns}
+    ${sections || emptyStateHTML('Draft', 'No picks match', 'Try a different team or conference filter.')}
+  </div>`);
+}
+
+// ─── TRANSACTIONS ───────────────────────────────────────────────────────────────
+function renderTransactions() {
+  navStack = [];
+  if (!txnData) { setApp(loadingHTML()); return; }
+
+  const teamOpts = ['ALL',...allSickos].map(t =>
+    `<option value="${attr(t)}" ${txnTeamFilter===t?'selected':''}>${esc(t==='ALL'?'All Teams':t)}</option>`).join('');
+  const typeOpts = [
+    ['ANY','All Moves'],['Roster Move','Roster Moves'],['Lineup Change','Lineup Changes']
+  ].map(([v,l]) => `<option value="${attr(v)}" ${txnTypeFilter===v?'selected':''}>${esc(l)}</option>`).join('');
+
+  let rows = txnTeamFilter === 'ALL' ? [...txnData] : [...(indexes.transactionsByTeam.get(txnTeamFilter) || [])];
+  if (txnTypeFilter !== 'ANY') rows = rows.filter(r => r.type === txnTypeFilter);
+
+  const txnBadgeClass = t =>
+    t==='Added'   ? 'txn-added'   :
+    t==='Started' ? 'txn-started' :
+    t==='Dropped' ? 'txn-dropped' : 'txn-benched';
+
+  const cards = rows.slice(0,150).map(r => {
+    const isMe = r.team === myTeam;
+    return `<div class="txn-row" data-action="view-player" data-team="${attr(r.team)}" data-player="${attr(r.player)}" style="cursor:pointer">
+      <div class="txn-date" style="pointer-events:none">${fmtDate(r.date)}</div>
+      <div class="txn-info" style="pointer-events:none">
+        <div class="txn-player">${esc(r.player)}</div>
+        <div class="txn-meta">${schoolTag(r.school)} <span>${esc(r.conf||'')}</span></div>
+      </div>
+      <span class="txn-badge ${txnBadgeClass(r.txn)}" style="pointer-events:none">${esc(r.txn)}</span>
+      <div class="txn-team ${isMe?'is-me':''}" style="pointer-events:none">${esc(r.team)}</div>
+    </div>`;
+  }).join('');
+
+  setApp(`<div class="fade-in">
+    ${errorBannerHTML(loadErrors)}
+    <div class="section-header">
+      <div class="section-title">Transactions</div>
+      <div class="badge">${fmtInt(rows.length)} moves</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <div class="seg-control" style="flex:1;margin-bottom:0;position:relative">
+        <select class="filter-select" id="txn-team-select" style="width:100%;padding-right:24px">${teamOpts}</select>
+        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:10px">▾</span>
+      </div>
+      <div class="seg-control" style="flex:1;margin-bottom:0;position:relative">
+        <select class="filter-select" id="txn-type-select" style="width:100%;padding-right:24px">${typeOpts}</select>
+        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:10px">▾</span>
+      </div>
+    </div>
+    ${cards || emptyStateHTML('Moves', 'No transactions match', 'Try a different team or move type filter.')}
+    ${rows.length>150?'<div class="data-note">Showing most recent 150 · filter by team to see all</div>':''}
+  </div>`);
+}
+
+
+function setApp(html) { document.getElementById('app').innerHTML = html; }
+function loadingHTML() {
+  return '<div class="loading">Loading<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></div>';
+}
+
+// Draft round ordinal: 1→1st … 18→18th, 19/Nov→Nov, 20/Dec→Dec, 21/Jan→Jan, 22/Feb→Feb
+const SUPP_DISPLAY = { '19':'Nov', '20':'Dec', '21':'Jan', '22':'Feb' };
+const SUPP_NAMES   = new Set(['Nov','Dec','Jan','Feb']);
+function draftLabel(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim();
+  if (SUPP_DISPLAY[s]) return SUPP_DISPLAY[s];  // numeric 19-22
+  if (SUPP_NAMES.has(s)) return s;               // already Nov/Dec/Jan/Feb (from Player Stats)
+  const n = parseInt(s);
+  if (isNaN(n)) return s;
+  const suffix = n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th';
+  return `${n}${suffix}`;
+}
+
+// ─── DARK MODE ────────────────────────────────────────────────────────────────
+const modeBtn = document.getElementById('mode-btn');
+let darkMode = localStorage.getItem('sickos_dark') === '1';
+function applyDark() {
+  document.body.classList.toggle('dark', darkMode);
+  modeBtn.textContent = darkMode ? '☀' : '☾';
+}
+applyDark();
+modeBtn.addEventListener('click', () => {
+  darkMode = !darkMode;
+  localStorage.setItem('sickos_dark', darkMode ? '1' : '0');
+  applyDark();
+});
+
+// ─── BOOT ──────────────────────────────────────────────────────────────────────
+(function initDateUI() {
+  const inp = document.getElementById('date-picker-input');
+  inp.min = SEASON_START; inp.max = SEASON_END;
+  document.getElementById('date-hint').textContent = `${SEASON_LABEL} season · tap to jump`;
+})();
+updateDateUI();
+init();
+</script>
+</body>
+</html>
