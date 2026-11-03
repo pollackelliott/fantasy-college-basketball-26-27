@@ -1643,7 +1643,9 @@ function renderScoreboard(errors) {
 
   if (upcoming.length) {
     const label = viewDate >= localYMD() ? 'Upcoming' : 'No stats yet';
-    cards += `<div class="draft-section-header">${label} · ${upcoming.length} game${upcoming.length === 1 ? '' : 's'}</div>`;
+    // Count player-games (one per player per game), not real-life games; cards stay grouped by game.
+    const playerGames = upcoming.reduce((n, g) => n + g.players.length, 0);
+    cards += `<div class="draft-section-header">${label} · ${playerGames} game${playerGames === 1 ? '' : 's'}</div>`;
     upcoming.forEach(g => {
       g.players.sort((a, b) => {
         const ord = { Starter:0, Bench:1 };
