@@ -400,6 +400,8 @@ const GAME_LOG_TAB = 'Game Log (locked)';
 // master_schedule column (0 = column A) that says whether a game is at a neutral site
 // (TRUE/FALSE, Yes/No, etc). Leave null until set: every game then keeps the word "vs".
 const SCHEDULE_NEUTRAL_COL = 10;   // column K
+const SCHEDULE_TIME_COL    = 8;    // column I, "Time (CT)"
+const SCHEDULE_TV_COL      = 11;   // column L, "TV"
 
 // ─── SCHOOL COLORS ─────────────────────────────────────────────────────────────
 const SCHOOL_COLORS = {
@@ -1051,6 +1053,23 @@ async function gvizFetchRange(sheetName, range) {
   return json.table.rows;
 }
 
+function cellText(row, idx) {
+  const c = row && row.c && row.c[idx];
+  if (!c) return '';
+  if (c.f != null && String(c.f).trim() !== '') return String(c.f).trim();
+  const v = c.v;
+  if (v == null) return '';
+  if (typeof v === 'string') {
+    const m = v.match(/^Date\((\d+),(\d+),(\d+),(\d+),(\d+)(?:,(\d+))?\)$/);   // time-of-day cell
+    if (m) {
+      const h = +m[4], min = String(m[5]).padStart(2, '0');
+      return `${((h + 11) % 12) + 1}:${min} ${h >= 12 ? 'PM' : 'AM'}`;
+    }
+  }
+  return String(v).trim();
+}
+function timeLabel(t) { return !t ? '' : /ct\b/i.test(t) ? t : t + ' CT'; }
+
 function parseNeutral(v) {
   if (SCHEDULE_NEUTRAL_COL == null) return null;      // unknown -> keep "vs"
   if (v === true || v === 1) return true;
@@ -1334,7 +1353,17 @@ async function init() {
       const neutral = parseNeutral(SCHEDULE_NEUTRAL_COL == null ? null : cell(r, SCHEDULE_NEUTRAL_COL));
       if (loc) locationMap[key] = loc;
       awayHomeMap[key] = { away, home, neutral };
-      mapListPush(scheduleByDate, ymd, { away, home, venue: loc, neutral });
+      // master_schedule has one row per player per game, so collapse to one entry per game.
+      const time = cellText(r, SCHEDULE_TIME_COL), tv = cellText(r, SCHEDULE_TV_COL);
+      const dayGames = scheduleByDate.get(ymd) || [];
+      const existing = dayGames.find(x => x.away === away && x.home === home);
+      if (existing) {
+        if (!existing.time && time) existing.time = time;
+        if (!existing.tv && tv) existing.tv = tv;
+        if (!existing.venue && loc) existing.venue = loc;
+      } else {
+        mapListPush(scheduleByDate, ymd, { away, home, venue: loc, neutral, time, tv });
+      }
     }
   }
 
@@ -1638,6 +1667,7 @@ function renderScoreboard(errors) {
       cards += `<div class="game-card fade-in">
         <div class="game-card-header">
           <div class="game-matchup">${schoolTag(g.away||'')} <span style="font-size:10px;color:var(--muted);font-weight:400">${vsOrAt(g.neutral)}</span> ${schoolTag(g.home||'')}</div>
+          ${(g.time || g.tv) ? `<div style="font-size:11px;color:var(--text);margin-top:4px;font-weight:700">${esc([timeLabel(g.time), g.tv].filter(Boolean).join(' · '))}</div>` : ''}
           ${g.venue ? `<div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:var(--font-mono);letter-spacing:0.2px">${esc(g.venue)}</div>` : ''}
         </div>
         ${rowsHTML}</div>`;
@@ -1679,7 +1709,7 @@ function renderStandings() {
   }).join('');
   setApp(`<div class="fade-in">
     ${errorBannerHTML(loadErrors)}
-    <div class="section-header"><div class="section-title">STANDINGS</div><div class="badge">Final · tap for roster</div></div>
+    <div class="section-header"><div class="section-title">STANDINGS</div><div class="badge">${localYMD() > SEASON_END ? 'Final · tap for roster' : 'Tap for roster'}</div></div>
     ${rows}
     <div class="data-note">PRA = Points + Rebounds + Assists · Starter games only</div>
   </div>`);
