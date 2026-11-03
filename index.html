@@ -867,6 +867,7 @@ let faRawLogs      = {};      // athleteId → game log rows
 let psResCache     = null;    // raw psRes rows cached for activeRosterSet building
 // Navigation stack for back button
 let navStack       = [];
+let viewingTeam    = null;   // team whose roster page is open from Standings (so Back returns there)
 
 let gameLog    = null;
 let standings  = null;
@@ -976,6 +977,7 @@ document.addEventListener('click', function(e) {
                    : currentTab === 'roster'        ? renderRoster
                    : currentTab === 'stats'         ? renderStats
                    : currentTab === 'scoreboard'    ? renderScoreboard
+                   : (currentTab === 'standings' && viewingTeam) ? (() => viewTeam(viewingTeam))
                    : renderStandings;
     navStack = [returnFn];
     viewPlayerLog(el.dataset.team, el.dataset.player);
@@ -1492,6 +1494,7 @@ function navBack() {
 function switchTab(tab) {
   currentTab = tab;
   navStack = [];
+  viewingTeam = null;
   document.querySelectorAll('[data-tab]').forEach(el => {
     el.classList.toggle('active', el.dataset.tab === tab);
     if (el.dataset.tab === tab) {
@@ -1692,6 +1695,7 @@ function renderScoreboard(errors) {
 // ─── STANDINGS ─────────────────────────────────────────────────────────────────
 function renderStandings() {
   navStack = [];
+  viewingTeam = null;
   if (!standings) { setApp(loadingHTML()); return; }
   if (!standings.length) {
     setApp(emptyStateHTML('Standings', 'Standings unavailable', 'No standings data was loaded.', 'Retry data load', 'retry-init'));
@@ -1795,6 +1799,7 @@ function renderRoster() {
 }
 
 function viewTeam(team) {
+  viewingTeam = team;
   pushNav(() => renderStandings());
   pushNav(() => viewTeam(team));
 
