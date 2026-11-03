@@ -397,6 +397,9 @@ const SEASON_END   = '2027-03-07';
 const FA_MIN_PRAG  = 10;               // minimum PRA/G to show as free agent
 const DRAFT_SUPP_RANGE = 'A255:G369';  // supplemental (Nov/Dec/Jan/Feb) picks on the Draft tab
 const GAME_LOG_TAB = 'Game Log (locked)';
+// master_schedule column (0 = column A) that says whether a game is at a neutral site
+// (TRUE/FALSE, Yes/No, etc). Leave null until set: every game then keeps the word "vs".
+const SCHEDULE_NEUTRAL_COL = 10;   // column K
 
 // ─── SCHOOL COLORS ─────────────────────────────────────────────────────────────
 const SCHOOL_COLORS = {
@@ -870,6 +873,8 @@ let draftData  = null;   // from Draft tab
 let txnData    = null;   // from Transaction Log tab
 let locationMap= {};
 let awayHomeMap= {};
+let scheduleByDate = new Map();   // ymd -> [{away, home, venue, neutral}] from master_schedule
+let rosterBySchool = new Map();   // school -> active (Starter/Bench) league players, for unplayed games
 let allSickos  = [];
 let loadErrors = [];
 let indexes = emptyIndexes();
@@ -931,6 +936,10 @@ function buildIndexes() {
   indexes.playerLogsByTeamPlayer.forEach(rows => rows.sort((a,b) => a._ymd.localeCompare(b._ymd)));
 
   (playerStats || []).forEach(row => mapListPush(indexes.playersByTeam, row.Team, row));
+  rosterBySchool = new Map();
+  (playerStats || []).forEach(row => {
+    if (row.RosterStatus === 'Starter' || row.RosterStatus === 'Bench') mapListPush(rosterBySchool, String(row.School||'').trim(), row);
+  });
   indexes.playersByTeam.forEach(rows => rows.sort((a,b) => (Number(b.TotalPRA)||0)-(Number(a.TotalPRA)||0)));
 
   (standings || []).forEach(row => indexes.standingsByTeam.set(row.Team, row));
@@ -1041,6 +1050,14 @@ async function gvizFetchRange(sheetName, range) {
   const json = JSON.parse(text.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
   return json.table.rows;
 }
+
+function parseNeutral(v) {
+  if (SCHEDULE_NEUTRAL_COL == null) return null;      // unknown -> keep "vs"
+  if (v === true || v === 1) return true;
+  if (v === false || v === 0 || v == null) return false;
+  return /^(true|yes|y|1|neutral)$/i.test(String(v).trim());
+}
+function vsOrAt(neutral) { return neutral === false ? 'at' : 'vs'; }
 
 // ─── DATE HELPERS ──────────────────────────────────────────────────────────────
 function localYMD() {
@@ -1234,6 +1251,8 @@ async function init() {
   setApp(loadingHTML());
   loadErrors = [];
   indexes = emptyIndexes();
+  scheduleByDate = new Map();
+  locationMap = {}; awayHomeMap = {};
 
   const errors = [];
   const [glRes, stRes, psRes, msRes, drRes, txRes, drSuppRes] = await Promise.allSettled([
@@ -1312,8 +1331,10 @@ async function init() {
       const ymd  = parseDate(cell(r,5));
       if (!away || !home || !ymd) continue;
       const key = [away,home].sort().join('|') + '|' + ymd;
+      const neutral = parseNeutral(SCHEDULE_NEUTRAL_COL == null ? null : cell(r, SCHEDULE_NEUTRAL_COL));
       if (loc) locationMap[key] = loc;
-      awayHomeMap[key] = { away, home };
+      awayHomeMap[key] = { away, home, neutral };
+      mapListPush(scheduleByDate, ymd, { away, home, venue: loc, neutral });
     }
   }
 
@@ -1523,20 +1544,33 @@ function renderScoreboard(errors) {
       const ah    = awayHomeMap[ahKey];
       const away  = ah ? ah.away : r.School;
       const home  = ah ? ah.home : r.Opponent;
-      games[key]  = { away, home, players: [] };
+      games[key]  = { away, home, neutral: ah ? ah.neutral : null, players: [] };
     }
     games[key].players.push(r);
   });
 
+  // Unplayed games: scheduled games on this date involving active league players that have
+  // no rows in the game log yet. Completed games render exactly as before.
+  const loggedKeys = new Set(dayRows.map(r => [r.School||'', r.Opponent||''].sort().join('|||')));
+  const upcoming = [];
+  (scheduleByDate.get(viewDate) || []).forEach(sg => {
+    if (loggedKeys.has([sg.away, sg.home].sort().join('|||'))) return;
+    let players = [...(rosterBySchool.get(sg.away) || []), ...(rosterBySchool.get(sg.home) || [])];
+    if (scoreFilter !== 'ALL') players = players.filter(p => p.Team === scoreFilter);
+    if (!players.length) return;
+    upcoming.push({ ...sg, players });
+  });
+  const upcomingStarters = upcoming.reduce((n, g) => n + g.players.filter(p => p.RosterStatus === 'Starter').length, 0);
+
   let cards = '';
   const matchupList = Object.values(games);
-  if (!matchupList.length) {
+  if (!matchupList.length && !upcoming.length) {
     const anyToday = dayRows.length;
     cards = emptyStateHTML(
       anyToday ? 'Search' : 'Calendar',
       anyToday ? 'No matching players' : 'No games on this date',
       `${anyToday ? `No players from <strong>${esc(scoreFilter)}</strong><br>played on this date.`
-                  : 'No games were played on this date.'}
+                  : (viewDate >= localYMD() ? 'None of the rostered players have a game scheduled on this date.' : 'No games were played on this date.')}
        <br><span class="state-subtle">Use the date arrows to find a game day.</span>`
     );
   } else {
@@ -1571,17 +1605,52 @@ function renderScoreboard(errors) {
       const venue    = locationMap[venueKey] || '';
       cards += `<div class="game-card fade-in">
         <div class="game-card-header">
-          <div class="game-matchup">${schoolTag(g.away||'')} <span style="font-size:10px;color:var(--muted);font-weight:400">vs</span> ${schoolTag(g.home||'')}</div>
+          <div class="game-matchup">${schoolTag(g.away||'')} <span style="font-size:10px;color:var(--muted);font-weight:400">${vsOrAt(g.neutral)}</span> ${schoolTag(g.home||'')}</div>
           ${venue ? `<div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:var(--font-mono);letter-spacing:0.2px">${esc(venue)}</div>` : ''}
         </div>
         ${playerRows}</div>`;
     });
   }
 
+  if (upcoming.length) {
+    const label = viewDate >= localYMD() ? 'Upcoming' : 'No stats yet';
+    cards += `<div class="draft-section-header">${label} · ${upcoming.length} game${upcoming.length === 1 ? '' : 's'}</div>`;
+    upcoming.forEach(g => {
+      g.players.sort((a, b) => {
+        const ord = { Starter:0, Bench:1 };
+        const d = (ord[a.RosterStatus]??2) - (ord[b.RosterStatus]??2);
+        return d !== 0 ? d : String(a.Player).localeCompare(String(b.Player));
+      });
+      const rowsHTML = g.players.map(p => {
+        const status = p.RosterStatus || '';
+        const sCls   = status === 'Starter' ? 'status-starter' : status === 'Bench' ? 'status-bench' : 'status-inactive';
+        const teamTag = scoreFilter === 'ALL'
+          ? `<span style="font-size:10px;color:var(--muted)"> · ${esc(p.Team||'')}</span>` : '';
+        return `<div class="player-row" data-action="view-player" data-team="${attr(p.Team||'')}" data-player="${attr(p.Player||'')}" style="cursor:pointer">
+          <div class="player-info" style="pointer-events:none">
+            <div class="player-name">${esc(p.Player||'')}${teamTag}</div>
+            <div class="player-school">${schoolTag(p.School||'')} ${esc(p.Conference||'')}</div>
+          </div>
+          <span class="player-status ${sCls}" style="pointer-events:none">${esc(status)}</span>
+          <div class="pra-block" style="pointer-events:none"><div class="pra-big" style="font-size:22px;color:var(--muted)">–</div></div>
+        </div>`;
+      }).join('');
+      cards += `<div class="game-card fade-in">
+        <div class="game-card-header">
+          <div class="game-matchup">${schoolTag(g.away||'')} <span style="font-size:10px;color:var(--muted);font-weight:400">${vsOrAt(g.neutral)}</span> ${schoolTag(g.home||'')}</div>
+          ${g.venue ? `<div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:var(--font-mono);letter-spacing:0.2px">${esc(g.venue)}</div>` : ''}
+        </div>
+        ${rowsHTML}</div>`;
+    });
+  }
+
   const errBanner = errorBannerHTML(errors);
-  const bar = (filtered.length && scoreFilter !== 'ALL') ? `<div class="totals-bar">
+  const barSub = filtered.length
+    ? `${starterRows.length} starters · ${playedCnt} played${upcomingStarters ? ` · ${upcomingStarters} yet to play` : ''}`
+    : `${upcomingStarters} starters scheduled`;
+  const bar = ((filtered.length || upcoming.length) && scoreFilter !== 'ALL') ? `<div class="totals-bar">
     <div><div class="totals-label">${esc(scoreFilter.toUpperCase())}</div>
-         <div class="totals-sub">${starterRows.length} starters · ${playedCnt} played</div></div>
+         <div class="totals-sub">${barSub}</div></div>
     <div style="text-align:right"><div class="totals-val">${fmtInt(todayPRA)}</div><div class="totals-sub">Starter PRA</div></div>
   </div>` : '';
 
