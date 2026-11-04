@@ -2016,7 +2016,7 @@ const gameStatsOrDNP = g => String(g.GameNumber) === 'DNP'
   ? '<div class="pra-block" style="pointer-events:none"><div class="pra-big" style="font-size:22px;color:var(--red)">DNP</div></div>'
   : statNumsHTML(Number(g.PRA) || 0, num(g.Points), num(g.Rebounds), num(g.Assists));
 
-// Your slate today
+// Your day today
 function digestSlateHTML() {
   if (!myTeam) return '';
   const today  = localYMD();
@@ -2039,7 +2039,7 @@ function digestSlateHTML() {
           <span class="player-status ${sCls}" style="padding:1px 6px;font-size:10px">${esc(p.RosterStatus)}</span></div></div>
       ${right}</div>`;
   }).join('') : `<div class="dempty">Nobody on ${esc(myTeam)} plays today. Enjoy the quiet.</div>`;
-  return dcard('Your slate', rows.length ? plural(rows.length, 'player') + ' today' : 'Today', body);
+  return dcard('Your Day Today', rows.length ? plural(rows.length, 'player') + ' today' : 'Today', body);
 }
 
 // Games tonight with two or more starters from across the league
@@ -2071,7 +2071,7 @@ function digestMultiHTML() {
   return dcard('Multi-player games', plural(games.length, 'game') + ' tonight', body);
 }
 
-// Every team's day (the recap day), ranked; tap a team to see its starters
+// Yesterday's Team Scores (the recap day), ranked; tap a team to see its starters
 function digestTeamsHTML(rc) {
   if (!rc || !allSickos.length) return '';
   const dayRows = (indexes.gameLogByDate.get(rc.date) || []).filter(r => r.Team && r.RosterStatus === 'Starter');
@@ -2097,7 +2097,7 @@ function digestTeamsHTML(rc) {
           <div class="drow-meta">${t.played} played${t.dnp ? ` · ${t.dnp} DNP` : ''}</div></div>
         <div class="recap-n">${t.pra}</div><span class="chev">›</span></summary>${inner}</details>`;
   }).join('');
-  return dcard("Every team's day", dayLabel(rc.date), body);
+  return dcard("Yesterday's Team Scores", dayLabel(rc.date), body);
 }
 
 // Starters who sat out the recap day
@@ -2111,7 +2111,7 @@ function digestDnpHTML(rc) {
         <div class="drow-meta">${schoolTag(g.School || '')} <span>${relFor(g.School, g.Opponent, rc.date)} ${esc(g.Opponent || '')}</span></div></div>
       <div class="drow-right"><div class="drow-time${g.Team === myTeam ? ' mine' : ''}">${esc(g.Team)}</div></div></div>`).join('')
     : '<div class="dempty">Perfect attendance. Every starter suited up.</div>';
-  return dcard('DNP wall', rows.length ? plural(rows.length, 'starter') + ' sat · ' + dayLabel(rc.date) : dayLabel(rc.date), body);
+  return dcard('DNP', rows.length ? plural(rows.length, 'starter') + ' sat · ' + dayLabel(rc.date) : dayLabel(rc.date), body);
 }
 
 // Moves dated yesterday, today, or tomorrow
