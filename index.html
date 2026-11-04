@@ -1878,8 +1878,9 @@ function computeRecap() {
 function recapHTML() {
   const rc = computeRecap();
   if (!rc) return '';
+  // No label when the recap is for yesterday; otherwise show the actual date so it isn't ambiguous
   const label = rc.date === ymdAddDays(localYMD(), -1)
-    ? 'Yesterday'
+    ? ''
     : new Date(rc.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   const row = (k, main, sub, num, attrs, cls) => `<div class="recap-row ${cls || ''}" ${attrs || ''}>
       <div class="recap-info"><div class="recap-k">${k}</div><div class="recap-main">${main}</div>${sub ? `<div class="recap-sub">${sub}</div>` : ''}</div>
@@ -1909,7 +1910,7 @@ function recapHTML() {
       `data-action="view-team" data-team="${attr(myTeam)}"`, 'is-me'));
   }
   if (!out.length) return '';
-  return `<div class="recap"><div class="recap-head"><div class="recap-title">Sickos' Digest</div><div class="recap-date">${esc(label)}</div></div>${out.join('')}</div>`;
+  return `<div class="recap"><div class="recap-head"><div class="recap-title">Sickos' Digest</div>${label ? `<div class="recap-date">${esc(label)}</div>` : ''}</div>${out.join('')}</div>`;
 }
 
 // ─── HEADER STATUS LINE (formula result in Sickos Standings!A16) ───────────────
@@ -2016,7 +2017,7 @@ const gameStatsOrDNP = g => String(g.GameNumber) === 'DNP'
   ? '<div class="pra-block" style="pointer-events:none"><div class="pra-big" style="font-size:22px;color:var(--red)">DNP</div></div>'
   : statNumsHTML(Number(g.PRA) || 0, num(g.Points), num(g.Rebounds), num(g.Assists));
 
-// Your day today
+// Your Games today
 function digestSlateHTML() {
   if (!myTeam) return '';
   const today  = localYMD();
@@ -2039,7 +2040,7 @@ function digestSlateHTML() {
           <span class="player-status ${sCls}" style="padding:1px 6px;font-size:10px">${esc(p.RosterStatus)}</span></div></div>
       ${right}</div>`;
   }).join('') : `<div class="dempty">Nobody on ${esc(myTeam)} plays today. Enjoy the quiet.</div>`;
-  return dcard('Your Day Today', rows.length ? plural(rows.length, 'player') + ' today' : 'Today', body);
+  return dcard('Your Games Today', rows.length ? plural(rows.length, 'player') + ' today' : 'Today', body);
 }
 
 // Games tonight with two or more starters from across the league
@@ -2097,7 +2098,7 @@ function digestTeamsHTML(rc) {
           <div class="drow-meta">${t.played} played${t.dnp ? ` · ${t.dnp} DNP` : ''}</div></div>
         <div class="recap-n">${t.pra}</div><span class="chev">›</span></summary>${inner}</details>`;
   }).join('');
-  return dcard("Yesterday's Team Scores", dayLabel(rc.date), body);
+  return dcard("Yesterday's Team Scores", rc.date === ymdAddDays(localYMD(), -1) ? '' : dayLabel(rc.date), body);
 }
 
 // Starters who sat out the recap day
@@ -2480,15 +2481,17 @@ function renderStats() {
       ? `<span class="fa-badge">Free Agent</span>`
       : `<span style="font-weight:700;color:var(--text)">${esc(r.Team)}</span> · ${esc(draftLabel(r.DraftRound))}`;
 
+    // The column you're sorting by is orange; the rest stay dark (like the Top 10 page)
+    const hl = k => statSort === k ? ' style="color:var(--accent)"' : '';
     const cols = isTotals
-      ? `<div class="stat-col"><div class="stat-val" style="color:var(--accent)">${fmtInt(r.TotalPRA)}</div><div class="stat-key">PRA</div></div>
-         <div class="stat-col"><div class="stat-val sm">${fmtInt(r.Points)}</div><div class="stat-key">PTS</div></div>
-         <div class="stat-col"><div class="stat-val sm">${fmtInt(r.Rebounds)}</div><div class="stat-key">REB</div></div>
-         <div class="stat-col"><div class="stat-val sm">${fmtInt(r.Assists)}</div><div class="stat-key">AST</div></div>`
-      : `<div class="stat-col"><div class="stat-val" style="color:var(--accent)">${num(r.PRAG).toFixed(1)}</div><div class="stat-key">PRA/G</div></div>
-         <div class="stat-col"><div class="stat-val sm">${num(r.PPG).toFixed(1)}</div><div class="stat-key">PPG</div></div>
-         <div class="stat-col"><div class="stat-val sm">${num(r.RPG).toFixed(1)}</div><div class="stat-key">RPG</div></div>
-         <div class="stat-col"><div class="stat-val sm">${num(r.APG).toFixed(1)}</div><div class="stat-key">APG</div></div>`;
+      ? `<div class="stat-col"><div class="stat-val"${hl('total')}>${fmtInt(r.TotalPRA)}</div><div class="stat-key">PRA</div></div>
+         <div class="stat-col"><div class="stat-val sm"${hl('pts')}>${fmtInt(r.Points)}</div><div class="stat-key">PTS</div></div>
+         <div class="stat-col"><div class="stat-val sm"${hl('reb')}>${fmtInt(r.Rebounds)}</div><div class="stat-key">REB</div></div>
+         <div class="stat-col"><div class="stat-val sm"${hl('ast')}>${fmtInt(r.Assists)}</div><div class="stat-key">AST</div></div>`
+      : `<div class="stat-col"><div class="stat-val"${hl('prag')}>${num(r.PRAG).toFixed(1)}</div><div class="stat-key">PRA/G</div></div>
+         <div class="stat-col"><div class="stat-val sm"${hl('ppg')}>${num(r.PPG).toFixed(1)}</div><div class="stat-key">PPG</div></div>
+         <div class="stat-col"><div class="stat-val sm"${hl('rpg')}>${num(r.RPG).toFixed(1)}</div><div class="stat-key">RPG</div></div>
+         <div class="stat-col"><div class="stat-val sm"${hl('apg')}>${num(r.APG).toFixed(1)}</div><div class="stat-key">APG</div></div>`;
 
     const dataPlayer = isFA ? 'fa:' + (r.AggKey||r.Player)
                      : (statsScope === 'all' && faLoaded && r.AggKey) ? 'all:' + r.AggKey
