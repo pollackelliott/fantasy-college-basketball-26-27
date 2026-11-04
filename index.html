@@ -355,7 +355,7 @@
   .gl-pra, .date-main, .empty-title, .modal-title, .recap-title, .recap-n, .rules-title { font-family: var(--font-display); }
   .logo-main { font-size: 25px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: 0.6px; }
   .logo-sub { font-size: 10px; opacity: 0.6; }
-  .status-line { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.6px; text-transform: uppercase; line-height: 1.35; color: var(--hdr-fg); opacity: 0.72; margin: -3px 0 10px; }
+  .status-line { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.6px; text-transform: uppercase; line-height: 1.35; color: var(--hdr-fg); opacity: 0.72; margin: -3px 0 10px; text-align: center; }
   .status-line.live { color: var(--accent); opacity: 1; }
   .section-title { font-size: 21px; font-weight: 800; letter-spacing: 1px; }
   .totals-val { font-size: 40px; font-weight: 800; }
@@ -427,9 +427,10 @@
   <div class="status-line" id="status-line" hidden></div>
   <div class="tabs" id="tab-bar">
     <div class="tab active"  data-tab="standings">Standings</div>
-    <div class="tab"         data-tab="roster">Rosters</div>
+    <div class="tab"         data-tab="digest">Digest</div>
     <div class="tab"         data-tab="scoreboard">Scoreboard</div>
     <div class="tab"         data-tab="stats">Stats</div>
+    <div class="tab"         data-tab="roster">Rosters</div>
     <div class="tab"         data-tab="draft">Draft</div>
     <div class="tab"         data-tab="transactions">Transactions</div>
   </div>
@@ -1057,8 +1058,9 @@ document.addEventListener('click', function(e) {
                    : currentTab === 'roster'        ? renderRoster
                    : currentTab === 'stats'         ? renderStats
                    : currentTab === 'scoreboard'    ? renderScoreboard
-                   : (currentTab === 'standings' && viewingTeam) ? (() => viewTeam(viewingTeam))
-                   : (currentTab === 'standings' && viewingDayTop) ? (() => renderDayTop10(viewingDayTop))
+                   : ((currentTab === 'standings' || currentTab === 'digest') && viewingTeam) ? (() => viewTeam(viewingTeam))
+                   : (currentTab === 'digest' && viewingDayTop) ? (() => renderDayTop10(viewingDayTop))
+                   : currentTab === 'digest' ? renderDigest
                    : renderStandings;
     navStack = [returnFn];
     viewPlayerLog(el.dataset.team, el.dataset.player);
@@ -1594,6 +1596,7 @@ function renderCurrentTab(errors) {
   try {
     if      (currentTab === 'scoreboard')   renderScoreboard(errors);
     else if (currentTab === 'standings')    renderStandings();
+    else if (currentTab === 'digest')       renderDigest();
     else if (currentTab === 'roster')       renderRoster();
     else if (currentTab === 'stats')        renderStats();
     else if (currentTab === 'draft')        renderDraft();
@@ -1706,14 +1709,11 @@ function renderScoreboard(errors) {
         return `<div class="player-row" data-action="view-player" data-team="${attr(p.Team||'')}" data-player="${attr(p.Player||'')}" style="cursor:pointer">
           <div class="player-info" style="pointer-events:none">
             <div class="player-name">${esc(p.Player||'')}${teamTag}</div>
-            <div class="player-school">${schoolTag(p.School||'')} ${esc(p.Conference||'')}</div>
+            <div class="player-school">${schoolTag(p.School||'')} ${esc(p.Conference||'')}
+              <span class="player-status ${sCls}" style="padding:1px 6px;font-size:10px;margin-left:4px">${esc(status)}</span></div>
           </div>
-          <span class="player-status ${sCls}" style="pointer-events:none">${esc(status)}</span>
-          <div class="pra-block" style="pointer-events:none">
-            ${isDNP ? '<div class="pra-big" style="font-size:22px;color:var(--red)">DNP</div>'
-                    : '<div class="pra-big ' + praCls + '">' + (pra||'–') + '</div>' +
-                      (pra>0?'<div class="pra-breakdown">' + num(p.Points) + 'p ' + num(p.Rebounds) + 'r ' + num(p.Assists) + 'a</div>':'')}
-          </div>
+          ${isDNP ? '<div class="pra-block" style="pointer-events:none"><div class="pra-big" style="font-size:22px;color:var(--red)">DNP</div></div>'
+                  : statNumsHTML(pra, num(p.Points), num(p.Rebounds), num(p.Assists))}
         </div>`;
       }).join('');
       const venueKey = [g.away||'', g.home||''].sort().join('|') + '|' + viewDate;
@@ -1746,10 +1746,10 @@ function renderScoreboard(errors) {
         return `<div class="player-row" data-action="view-player" data-team="${attr(p.Team||'')}" data-player="${attr(p.Player||'')}" style="cursor:pointer">
           <div class="player-info" style="pointer-events:none">
             <div class="player-name">${esc(p.Player||'')}${teamTag}</div>
-            <div class="player-school">${schoolTag(p.School||'')} ${esc(p.Conference||'')}</div>
+            <div class="player-school">${schoolTag(p.School||'')} ${esc(p.Conference||'')}
+              <span class="player-status ${sCls}" style="padding:1px 6px;font-size:10px;margin-left:4px">${esc(status)}</span></div>
           </div>
-          <span class="player-status ${sCls}" style="pointer-events:none">${esc(status)}</span>
-          <div class="pra-block" style="pointer-events:none"><div class="pra-big" style="font-size:22px;color:var(--muted)">–</div></div>
+          ${statNumsHTML('–', '–', '–', '–')}
         </div>`;
       }).join('');
       cards += `<div class="game-card fade-in">
@@ -1942,6 +1942,22 @@ function renderRules() {
   });
 }
 
+// PRA in orange, then PTS / REB / AST, each labeled underneath (shared by Top 10, Scoreboard, game logs)
+function statNumsHTML(pra, pts, reb, ast) {
+  const c = (v, k, st) => `<div class="stat-col"><div class="stat-val"${st ? ` style="${st}"` : ''}>${v}</div><div class="stat-key">${k}</div></div>`;
+  return `<div class="stat-nums" style="gap:10px">${c(pra, 'PRA', 'color:var(--accent)')}${c(pts, 'PTS')}${c(reb, 'REB')}${c(ast, 'AST')}</div>`;
+}
+
+// ─── DIGEST TAB ────────────────────────────────────────────────────────────────
+function renderDigest() {
+  navStack = []; viewingTeam = null; viewingDayTop = null;
+  if (!gameLog) { setApp(loadingHTML()); return; }
+  setApp(`<div class="fade-in">
+    ${errorBannerHTML(loadErrors)}
+    ${recapHTML() || emptyStateHTML('', 'Nothing to digest yet', 'Check back once the first day of games is in the books.')}
+  </div>`);
+}
+
 // ─── DAY TOP 10 (opened from the Digest's top performer) ───────────────────────
 let dayTopSort    = 'pra';
 let viewingDayTop = null;   // date being viewed, so Back from a player log returns here
@@ -1951,7 +1967,7 @@ function dayLabel(ymd) {
 }
 function renderDayTop10(date) {
   viewingDayTop = date; viewingTeam = null;
-  pushNav(() => renderStandings());
+  pushNav(() => renderDigest());
   pushNav(() => renderDayTop10(date));
   const keyFor = { pra: 'PRA', pts: 'Points', rebs: 'Rebounds', reb: 'Rebounds', ast: 'Assists' };
   const sortKey = keyFor[dayTopSort] || 'PRA';
@@ -1979,7 +1995,7 @@ function renderDayTop10(date) {
     </div>`;
   }).join('');
   setApp(`<div class="fade-in">
-    <button class="back-btn" data-action="back">← Standings</button>
+    <button class="back-btn" data-action="back">← Digest</button>
     <div class="section-header"><div class="section-title">Top 10 · ${esc(dayLabel(date))}</div></div>
     <div style="display:flex;gap:6px;margin-bottom:12px">${sortBtns}</div>
     ${cards || emptyStateHTML('', 'Nothing to rank', 'No starter results were recorded for this day.')}
@@ -2010,7 +2026,6 @@ function renderStandings() {
   }).join('');
   setApp(`<div class="fade-in">
     ${errorBannerHTML(loadErrors)}
-    ${recapHTML()}
     <div class="section-header"><div class="section-title">STANDINGS</div><div class="badge">${localYMD() > SEASON_END ? 'Final · tap for roster' : 'Tap for roster'}</div></div>
     ${rows}
     <div class="data-note">PRA = Points + Rebounds + Assists · Starter games only</div>
@@ -2101,14 +2116,15 @@ function renderRoster() {
 function viewTeam(team) {
   viewingTeam = team;
   viewingDayTop = null;
-  pushNav(() => renderStandings());
+  const fromDigest = currentTab === 'digest';
+  pushNav(() => fromDigest ? renderDigest() : renderStandings());
   pushNav(() => viewTeam(team));
 
   const rows = rosterRowsForTeam(team);
   const isMe = team === myTeam;
 
   setApp(`<div class="fade-in">
-    <button class="back-btn" data-action="back">← Standings</button>
+    <button class="back-btn" data-action="back">← ${fromDigest ? 'Digest' : 'Standings'}</button>
     <div class="section-header"><div class="section-title">${esc(team)}${isMe?' ★':''}</div></div>
     ${rosterSummaryHTML(team, rows)}
     ${rosterCardsHTML(team, rows)}
@@ -2164,10 +2180,10 @@ function viewPlayerLog(team, playerArg) {
         <div class="gl-opp">${schoolTag(r.Opponent||'')}</div>
         <div class="gl-meta">
           ${showBadge?`<span class="player-status ${sCls}" style="padding:1px 5px;font-size:10px">${esc(status)}</span>`:''}
-          ${!isDNP?`<span class="gl-breakdown">${num(r.Minutes)}m · ${num(r.Points)}p ${num(r.Rebounds)}r ${num(r.Assists)}a</span>`:''}
+          ${!isDNP?`<span class="gl-breakdown">${num(r.Minutes)}m</span>`:''}
         </div>
       </div>
-      <div class="gl-pra ${praCls}">${isDNP?'<span style="font-size:18px;color:var(--red)">DNP</span>':(pra||'–')}</div>
+      ${isDNP ? '<div class="gl-pra"><span style="font-size:18px;color:var(--red)">DNP</span></div>' : statNumsHTML(pra, num(r.Points), num(r.Rebounds), num(r.Assists))}
     </div>`;
   }).join('');
 
