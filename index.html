@@ -1878,10 +1878,13 @@ function computeRecap() {
 function recapHTML() {
   const rc = computeRecap();
   if (!rc) return '';
-  // No label when the recap is for yesterday; otherwise show the actual date so it isn't ambiguous
-  const label = rc.date === ymdAddDays(localYMD(), -1)
-    ? ''
-    : new Date(rc.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  // Header shows today's date. Row labels say "Yesterday's ..." (or the actual date if the last game day wasn't yesterday).
+  const todayLong = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const isYest    = rc.date === ymdAddDays(localYMD(), -1);
+  const dShort    = new Date(rc.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const L = isYest
+    ? { top: "Yesterday's Top Performer", team: "Yesterday's Team of the Day", mover: "Yesterday's Biggest Mover", mine: 'Your Day Yesterday' }
+    : { top: `${dShort} Top Performer`,    team: `${dShort} Team of the Day`,    mover: `${dShort} Biggest Mover`,    mine: `Your Day ${dShort}` };
   const row = (k, main, sub, num, attrs, cls) => `<div class="recap-row ${cls || ''}" ${attrs || ''}>
       <div class="recap-info"><div class="recap-k">${k}</div><div class="recap-main">${main}</div>${sub ? `<div class="recap-sub">${sub}</div>` : ''}</div>
       <div class="recap-n">${num}</div></div>`;
@@ -1890,27 +1893,27 @@ function recapHTML() {
     const t0 = rc.top[0];
     const names = rc.top.length === 1 ? esc(t0.Player)
       : rc.top.slice(0, 2).map(g => esc(g.Player)).join(' · ') + (rc.top.length > 2 ? ` +${rc.top.length - 2}` : '');
-    out.push(row('Top performer ›', names,
+    out.push(row(L.top + ' ›', names,
       rc.top.length === 1 ? `${schoolTag(t0.School || '')} <span>${esc(t0.Team)}</span>` : 'tied for the day’s best',
       rc.topVal,
       `data-action="day-top" data-date="${attr(rc.date)}"`));
   }
   if (rc.bestTeams.length) {
-    out.push(row('Team of the day', rc.bestTeams.map(esc).join(' · '), 'highest starter PRA', rc.bestVal,
+    out.push(row(L.team, rc.bestTeams.map(esc).join(' · '), 'highest starter PRA', rc.bestVal,
       rc.bestTeams.length === 1 ? `data-action="view-team" data-team="${attr(rc.bestTeams[0])}"` : ''));
   }
   if (rc.mover) {
-    out.push(row('Biggest mover', esc(rc.mover.team), `${ordinalN(rc.mover.before)} → ${ordinalN(rc.mover.after)} in the standings`,
+    out.push(row(L.mover, esc(rc.mover.team), `${ordinalN(rc.mover.before)} → ${ordinalN(rc.mover.after)} in the standings`,
       `▲${rc.mover.d}`, `data-action="view-team" data-team="${attr(rc.mover.team)}"`));
   }
   if (rc.mine) {
     const m = rc.mine;
-    out.push(row('Your day', `${ordinalN(m.rank)} of ${m.of} teams`,
+    out.push(row(L.mine, `${ordinalN(m.rank)} of ${m.of} teams`,
       `${m.diff >= 0 ? '+' : ''}${m.diff} vs the league average (${m.avg})`, m.pra,
       `data-action="view-team" data-team="${attr(myTeam)}"`, 'is-me'));
   }
   if (!out.length) return '';
-  return `<div class="recap"><div class="recap-head"><div class="recap-title">Sickos' Digest</div>${label ? `<div class="recap-date">${esc(label)}</div>` : ''}</div>${out.join('')}</div>`;
+  return `<div class="recap"><div class="recap-head"><div class="recap-title">Sickos' Digest</div><div class="recap-date">${esc(todayLong)}</div></div>${out.join('')}</div>`;
 }
 
 // ─── HEADER STATUS LINE (formula result in Sickos Standings!A16) ───────────────
