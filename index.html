@@ -400,6 +400,45 @@
   .link-btn span { font-weight: 500; color: var(--muted); text-decoration: none; display: inline-block; }
   .past-link { display: block; padding: 8px 0; font-size: 14px; font-weight: 600; color: var(--accent); border-bottom: 1px solid var(--border); text-decoration: none; }
   .past-link:last-child { border-bottom: none; }
+  /* ── SCOREBOARD TEAM PICKER + TEAM BAR ── */
+  .score-select { margin-bottom: 14px; }
+  .score-select .filter-select { font-size: 14px; color: var(--text); padding: 7px 10px; }
+  .totals-team { font-family: var(--font-display); font-size: 29px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: 0.6px; color: var(--hdr-fg); line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ── DIGEST SECTIONS ── */
+  .dcard { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  .dcard-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 9px 14px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .dcard-title { font-family: var(--font-display); font-size: 19px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: 0.8px; color: var(--accent); }
+  .dcard-badge { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); text-align: right; }
+  .drow { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .drow:last-child { border-bottom: none; }
+  .drow[data-action] { cursor: pointer; }
+  .drow[data-action]:active { background: var(--surface2); }
+  .drow.sub { padding-left: 24px; background: rgba(0,0,0,0.025); }
+  .drow-info { flex: 1; min-width: 0; pointer-events: none; }
+  .drow-name { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .drow-meta { font-size: 12px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .drow-right { text-align: right; flex-shrink: 0; pointer-events: none; }
+  .drow-time { font-size: 13px; font-weight: 700; color: var(--text); }
+  .drow-time.mine, .mg-line b.mine { color: var(--accent); }
+  .drow-tv { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .dempty { padding: 16px 14px; font-size: 14px; color: var(--muted); text-align: center; }
+  .dgroup { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); padding: 10px 14px 4px; }
+  .mg-row { align-items: flex-start; }
+  .mg-at { font-size: 11px; color: var(--muted); font-weight: 400; }
+  .mg-line { font-size: 12px; color: var(--text); margin-top: 3px; line-height: 1.4; }
+  .mg-line b { font-weight: 700; margin-right: 4px; }
+  .mg-count { text-align: center; flex-shrink: 0; pointer-events: none; }
+  details.team-day { border-bottom: 1px solid var(--border); }
+  details.team-day:last-child { border-bottom: none; }
+  details.team-day summary { display: flex; align-items: center; gap: 12px; padding: 10px 14px; cursor: pointer; list-style: none; }
+  details.team-day summary::-webkit-details-marker { display: none; }
+  details.team-day.is-me summary { background: rgba(196,85,8,0.08); }
+  .team-sum-rank { font-family: var(--font-display); font-size: 26px; font-weight: 800; color: var(--muted); min-width: 26px; text-align: center; }
+  .chev { color: var(--muted); font-size: 18px; transition: transform 0.15s; flex-shrink: 0; }
+  details.team-day[open] .chev { transform: rotate(90deg); }
+  .dcard .txn-row { border: none; border-bottom: 1px solid var(--border); border-radius: 0; margin: 0; }
+  .dcard .txn-row:last-child { border-bottom: none; }
 </style>
 </head>
 <body>
@@ -1086,6 +1125,7 @@ document.addEventListener('click', function(e) {
 
 // Stats team filter (select element)
 document.addEventListener('change', function(e) {
+  if (e.target.id === 'score-team-select') { scoreFilter = e.target.value; renderScoreboard(); }
   if (e.target.id === 'stat-team-select') { statTeamFilter = e.target.value; renderStats(); }
   if (e.target.id === 'stat-conf-select') { statConfFilter = e.target.value; renderStats(); }
   if (e.target.id === 'roster-team-select') { rosterTeamFilter = e.target.value; renderRoster(); }
@@ -1642,11 +1682,18 @@ function renderScoreboard(errors) {
   if (!gameLog) { setApp(loadingHTML()); return; }
 
   const dayRows  = indexes.gameLogByDate.get(viewDate) || [];
-  const chips    = ['ALL', ...allSickos].map(t => {
-    const label = t === 'ALL' ? 'All' : t;
-    const active = scoreFilter === t ? 'active' : '';
-    return `<div class="team-chip ${active}" data-action="score-filter" data-team="${attr(t)}">${esc(label)}</div>`;
+  // Team dropdown: All teams, then you (marked), then everyone else A-Z
+  const others   = allSickos.filter(t => t !== myTeam).sort((x, y) => x.localeCompare(y));
+  const teamList = ['ALL', ...(myTeam && allSickos.includes(myTeam) ? [myTeam] : []), ...others];
+  if (!teamList.includes(scoreFilter)) scoreFilter = 'ALL';
+  const selOpts  = teamList.map(t => {
+    const label = t === 'ALL' ? 'All teams' : (t === myTeam ? '★ ' + t + ' (you)' : t);
+    return `<option value="${attr(t)}" ${scoreFilter === t ? 'selected' : ''}>${esc(label)}</option>`;
   }).join('');
+  const chips = `<div class="seg-control score-select" style="position:relative">
+      <select class="filter-select" id="score-team-select" style="width:100%;padding-right:24px">${selOpts}</select>
+      <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:12px">▾</span>
+    </div>`;
 
   const filtered    = scoreFilter === 'ALL' ? dayRows : dayRows.filter(r => r.Team === scoreFilter);
   const starterRows = filtered.filter(r => r.RosterStatus === 'Starter');
@@ -1763,16 +1810,18 @@ function renderScoreboard(errors) {
   }
 
   const errBanner = errorBannerHTML(errors);
+  const stRow = (standings || []).find(r => r.Team === scoreFilter);
+  const standingNote = stRow && stRow.Rank ? `${ordinalN(Number(stRow.Rank))} in standings · ` : '';
   const barSub = filtered.length
     ? `${starterRows.length} starters · ${playedCnt} played${upcomingStarters ? ` · ${upcomingStarters} yet to play` : ''}`
     : `${upcomingStarters} starters scheduled`;
   const bar = ((filtered.length || upcoming.length) && scoreFilter !== 'ALL') ? `<div class="totals-bar">
-    <div><div class="totals-label">${esc(scoreFilter.toUpperCase())}</div>
-         <div class="totals-sub">${barSub}</div></div>
+    <div style="min-width:0"><div class="totals-team">${esc(scoreFilter)}</div>
+         <div class="totals-sub">${standingNote}${barSub}</div></div>
     <div style="text-align:right"><div class="totals-val">${fmtInt(todayPRA)}</div><div class="totals-sub">Starter PRA</div></div>
   </div>` : '';
 
-  setApp(`<div class="fade-in">${errBanner}<div class="team-selector">${chips}</div>${bar}${cards}</div>`);
+  setApp(`<div class="fade-in">${errBanner}${chips}${bar}${cards}</div>`);
 }
 
 // ─── STANDINGS ─────────────────────────────────────────────────────────────────
@@ -1948,13 +1997,149 @@ function statNumsHTML(pra, pts, reb, ast) {
   return `<div class="stat-nums" style="gap:10px">${c(pra, 'PRA', 'color:var(--accent)')}${c(pts, 'PTS')}${c(reb, 'REB')}${c(ast, 'AST')}</div>`;
 }
 
+// ─── DIGEST SECTIONS ───────────────────────────────────────────────────────────
+function relFor(school, opp, date) {
+  const ah = awayHomeMap[[school || '', opp || ''].sort().join('|') + '|' + date];
+  return ah && ah.neutral === false && ah.away === school ? 'at' : 'vs';
+}
+function timeMinutes(t) {
+  const m = String(t || '').match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!m) return 99999;
+  let h = (+m[1]) % 12; if (/pm/i.test(m[3])) h += 12;
+  return h * 60 + (+m[2]);
+}
+function dcard(title, badge, body) {
+  return `<div class="dcard"><div class="dcard-head"><div class="dcard-title">${esc(title)}</div><div class="dcard-badge">${esc(badge || '')}</div></div>${body}</div>`;
+}
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+const gameStatsOrDNP = g => String(g.GameNumber) === 'DNP'
+  ? '<div class="pra-block" style="pointer-events:none"><div class="pra-big" style="font-size:22px;color:var(--red)">DNP</div></div>'
+  : statNumsHTML(Number(g.PRA) || 0, num(g.Points), num(g.Rebounds), num(g.Assists));
+
+// Your slate today
+function digestSlateHTML() {
+  if (!myTeam) return '';
+  const today  = localYMD();
+  const logged = indexes.gameLogByDate.get(today) || [];
+  const rows = [];
+  (scheduleByDate.get(today) || []).forEach(sg => {
+    [...(rosterBySchool.get(sg.away) || []), ...(rosterBySchool.get(sg.home) || [])]
+      .filter(p => p.Team === myTeam)
+      .forEach(p => rows.push({ p, sg, lg: logged.find(r => r.Team === myTeam && r.Player === p.Player),
+                                 opp: sg.away === p.School ? sg.home : sg.away }));
+  });
+  rows.sort((a, b) => timeMinutes(a.sg.time) - timeMinutes(b.sg.time) || (a.p.RosterStatus === 'Starter' ? 0 : 1) - (b.p.RosterStatus === 'Starter' ? 0 : 1));
+  const body = rows.length ? rows.map(({ p, sg, lg, opp }) => {
+    const sCls = p.RosterStatus === 'Starter' ? 'status-starter' : 'status-bench';
+    const right = lg ? gameStatsOrDNP(lg)
+      : `<div class="drow-right"><div class="drow-time">${esc(timeLabel(sg.time) || 'TBD')}</div>${sg.tv ? `<div class="drow-tv">${esc(sg.tv)}</div>` : ''}</div>`;
+    return `<div class="drow" data-action="view-player" data-team="${attr(myTeam)}" data-player="${attr(p.Player)}">
+      <div class="drow-info"><div class="drow-name">${esc(p.Player)}</div>
+        <div class="drow-meta">${schoolTag(p.School || '')} <span>${sg.neutral === false && sg.away === p.School ? 'at' : 'vs'} ${esc(opp)}</span>
+          <span class="player-status ${sCls}" style="padding:1px 6px;font-size:10px">${esc(p.RosterStatus)}</span></div></div>
+      ${right}</div>`;
+  }).join('') : `<div class="dempty">Nobody on ${esc(myTeam)} plays today. Enjoy the quiet.</div>`;
+  return dcard('Your slate', rows.length ? plural(rows.length, 'player') + ' today' : 'Today', body);
+}
+
+// Games tonight with two or more starters from across the league
+function digestMultiHTML() {
+  const today = localYMD();
+  const done  = new Set((indexes.gameLogByDate.get(today) || []).map(r => [r.School || '', r.Opponent || ''].sort().join('|||')));
+  const games = [];
+  (scheduleByDate.get(today) || []).forEach(sg => {
+    if (done.has([sg.away, sg.home].sort().join('|||'))) return;
+    const starters = [...(rosterBySchool.get(sg.away) || []), ...(rosterBySchool.get(sg.home) || [])].filter(p => p.RosterStatus === 'Starter');
+    if (starters.length >= 2) games.push({ sg, starters });
+  });
+  if (!games.length) return '';
+  games.sort((a, b) => b.starters.length - a.starters.length || timeMinutes(a.sg.time) - timeMinutes(b.sg.time));
+  const body = games.map(({ sg, starters }) => {
+    const byTeam = new Map();
+    starters.forEach(p => { if (!byTeam.has(p.Team)) byTeam.set(p.Team, []); byTeam.get(p.Team).push(p.Player); });
+    const lines = [...byTeam.entries()].map(([t, names]) =>
+      `<div class="mg-line"><b${t === myTeam ? ' class="mine"' : ''}>${esc(t)}</b> ${names.map(esc).join(', ')}</div>`).join('');
+    return `<div class="drow mg-row">
+      <div class="drow-info">
+        <div class="drow-name">${schoolTag(sg.away || '')} <span class="mg-at">${vsOrAt(sg.neutral)}</span> ${schoolTag(sg.home || '')}</div>
+        <div class="drow-meta">${esc([timeLabel(sg.time), sg.tv].filter(Boolean).join(' · '))}</div>
+        ${lines}
+      </div>
+      <div class="mg-count"><div class="recap-n" style="font-size:34px">${starters.length}</div><div class="stat-key">players</div></div>
+    </div>`;
+  }).join('');
+  return dcard('Multi-player games', plural(games.length, 'game') + ' tonight', body);
+}
+
+// Every team's day (the recap day), ranked; tap a team to see its starters
+function digestTeamsHTML(rc) {
+  if (!rc || !allSickos.length) return '';
+  const dayRows = (indexes.gameLogByDate.get(rc.date) || []).filter(r => r.Team && r.RosterStatus === 'Starter');
+  const teams = allSickos.map(t => {
+    const rows = dayRows.filter(r => r.Team === t);
+    return { team: t, rows,
+      pra: rows.reduce((n, r) => n + (Number(r.PRA) || 0), 0),
+      played: rows.filter(r => String(r.GameNumber) !== 'DNP').length,
+      dnp: rows.filter(r => String(r.GameNumber) === 'DNP').length };
+  }).sort((a, b) => b.pra - a.pra || a.team.localeCompare(b.team));
+  teams.forEach(t => { t.rank = 1 + teams.filter(x => x.pra > t.pra).length; });
+  const body = teams.map(t => {
+    const isMe = t.team === myTeam;
+    const inner = t.rows.length
+      ? [...t.rows].sort((a, b) => (Number(b.PRA) || 0) - (Number(a.PRA) || 0)).map(g => `<div class="drow sub" data-action="view-player" data-team="${attr(g.Team)}" data-player="${attr(g.Player)}">
+          <div class="drow-info"><div class="drow-name">${esc(g.Player)}</div>
+            <div class="drow-meta">${schoolTag(g.School || '')} <span>${relFor(g.School, g.Opponent, rc.date)} ${esc(g.Opponent || '')}</span></div></div>
+          ${gameStatsOrDNP(g)}</div>`).join('')
+      : '<div class="dempty">No starters in action.</div>';
+    return `<details class="team-day ${isMe ? 'is-me' : ''}" ${isMe ? 'open' : ''}>
+      <summary><div class="team-sum-rank">${t.rank}</div>
+        <div class="drow-info"><div class="drow-name">${esc(t.team)}${isMe ? ' <span style="color:var(--accent)">★</span>' : ''}</div>
+          <div class="drow-meta">${t.played} played${t.dnp ? ` · ${t.dnp} DNP` : ''}</div></div>
+        <div class="recap-n">${t.pra}</div><span class="chev">›</span></summary>${inner}</details>`;
+  }).join('');
+  return dcard("Every team's day", dayLabel(rc.date), body);
+}
+
+// Starters who sat out the recap day
+function digestDnpHTML(rc) {
+  if (!rc) return '';
+  const rows = (indexes.gameLogByDate.get(rc.date) || [])
+    .filter(r => r.Team && r.RosterStatus === 'Starter' && String(r.GameNumber) === 'DNP')
+    .sort((a, b) => a.Team.localeCompare(b.Team) || String(a.Player).localeCompare(String(b.Player)));
+  const body = rows.length ? rows.map(g => `<div class="drow" data-action="view-player" data-team="${attr(g.Team)}" data-player="${attr(g.Player)}">
+      <div class="drow-info"><div class="drow-name">${esc(g.Player)}</div>
+        <div class="drow-meta">${schoolTag(g.School || '')} <span>${relFor(g.School, g.Opponent, rc.date)} ${esc(g.Opponent || '')}</span></div></div>
+      <div class="drow-right"><div class="drow-time${g.Team === myTeam ? ' mine' : ''}">${esc(g.Team)}</div></div></div>`).join('')
+    : '<div class="dempty">Perfect attendance. Every starter suited up.</div>';
+  return dcard('DNP wall', rows.length ? plural(rows.length, 'starter') + ' sat · ' + dayLabel(rc.date) : dayLabel(rc.date), body);
+}
+
+// Moves dated yesterday, today, or tomorrow
+function digestMovesHTML() {
+  if (!txnData) return '';
+  const today = localYMD(), y = ymdAddDays(today, -1), tm = ymdAddDays(today, 1);
+  const groups = [['Tomorrow', tm], ['Today', today], ['Yesterday', y]]
+    .map(([label, d]) => ({ label, rows: txnData.filter(r => r.date === d) })).filter(g => g.rows.length);
+  const badgeCls = t => t === 'Added' ? 'txn-added' : t === 'Started' ? 'txn-started' : t === 'Dropped' ? 'txn-dropped' : 'txn-benched';
+  const total = groups.reduce((n, g) => n + g.rows.length, 0);
+  const body = groups.length ? groups.map(g => `<div class="dgroup">${esc(g.label)}</div>` + g.rows.map(r => `<div class="txn-row" data-action="view-player" data-team="${attr(r.team)}" data-player="${attr(r.player)}" style="cursor:pointer">
+      <div class="txn-info" style="pointer-events:none"><div class="txn-player">${esc(r.player)}</div>
+        <div class="txn-meta">${schoolTag(r.school)} <span>${esc(r.conf || '')}</span></div></div>
+      <span class="txn-badge ${badgeCls(r.txn)}" style="pointer-events:none">${esc(r.txn)}</span>
+      <div class="txn-team ${r.team === myTeam ? 'is-me' : ''}" style="pointer-events:none">${esc(r.team)}</div></div>`).join('')).join('')
+    : '<div class="dempty">No moves yesterday, today, or scheduled for tomorrow.</div>';
+  return dcard('Recent moves', plural(total, 'move'), body);
+}
+
 // ─── DIGEST TAB ────────────────────────────────────────────────────────────────
 function renderDigest() {
   navStack = []; viewingTeam = null; viewingDayTop = null;
   if (!gameLog) { setApp(loadingHTML()); return; }
+  const rc = computeRecap();
+  const parts = [recapHTML(), digestSlateHTML(), digestMultiHTML(), digestTeamsHTML(rc), digestDnpHTML(rc), digestMovesHTML()].filter(Boolean);
   setApp(`<div class="fade-in">
     ${errorBannerHTML(loadErrors)}
-    ${recapHTML() || emptyStateHTML('', 'Nothing to digest yet', 'Check back once the first day of games is in the books.')}
+    ${parts.join('') || emptyStateHTML('', 'Nothing to digest yet', 'Check back once the first day of games is in the books.')}
   </div>`);
 }
 
