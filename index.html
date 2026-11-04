@@ -88,13 +88,6 @@
     border-bottom: 2px solid var(--accent);
     transition: background 0.3s;
   }
-  /* center-court circle hanging off the sideline */
-  header::after {
-    content: ''; position: absolute; left: 0; right: 0; bottom: -9px; height: 9px;
-    pointer-events: none;
-    background: radial-gradient(circle at 50% 0, transparent 5px, var(--accent) 5px, var(--accent) 7px, transparent 7px);
-  }
-
   .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 
   .logo { display: flex; align-items: center; gap: 9px; }
@@ -362,7 +355,8 @@
   .gl-pra, .date-main, .empty-title, .modal-title, .recap-title, .recap-n, .rules-title { font-family: var(--font-display); }
   .logo-main { font-size: 25px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: 0.6px; }
   .logo-sub { font-size: 10px; opacity: 0.6; }
-  .logo-sub.stale { color: var(--accent); opacity: 1; }
+  .status-line { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.6px; text-transform: uppercase; line-height: 1.35; color: var(--hdr-fg); opacity: 0.72; margin: -3px 0 10px; }
+  .status-line.live { color: var(--accent); opacity: 1; }
   .section-title { font-size: 21px; font-weight: 800; letter-spacing: 1px; }
   .totals-val { font-size: 40px; font-weight: 800; }
   .pra-big { font-size: 36px; font-weight: 800; }
@@ -390,6 +384,9 @@
   .recap-main { font-size: 14px; font-weight: 700; color: var(--text); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .recap-sub { font-size: 12px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
   .recap-n { font-size: 34px; font-weight: 800; line-height: 1; color: var(--accent); flex-shrink: 0; pointer-events: none; }
+
+  .top-rank { font-family: var(--font-display); font-size: 24px; font-weight: 800; color: var(--muted); min-width: 24px; text-align: center; flex-shrink: 0; pointer-events: none; }
+  .top-rank.top3 { color: var(--accent); }
 
   /* ── RULES + FOOTER LINKS ── */
   .rules-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px 8px; margin-bottom: 10px; }
@@ -427,6 +424,7 @@
       <button class="mode-btn" id="mode-btn">☾</button>
     </div>
   </div>
+  <div class="status-line" id="status-line" hidden></div>
   <div class="tabs" id="tab-bar">
     <div class="tab active"  data-tab="standings">Standings</div>
     <div class="tab"         data-tab="roster">Rosters</div>
@@ -469,6 +467,8 @@ const SEASON_END   = '2027-03-15';
 const FA_MIN_PRAG  = 10;               // minimum PRA/G to show as free agent
 const DRAFT_SUPP_RANGE = 'A255:G369';  // supplemental (Nov/Dec/Jan/Feb) picks on the Draft tab
 const GAME_LOG_TAB = 'Game Log (locked)';
+const STATUS_SHEET = 'Sickos Standings';   // the header status line is read from this cell
+const STATUS_CELL  = 'A16';
 const PAST_SEASONS = [
   { label: '2025–26 season site',  url: 'https://pollackelliott.github.io/fantasy-college-basketball/' },
   { label: '2025–26 season sheet', url: 'https://docs.google.com/spreadsheets/d/1SDyVjpmVZuoq3H7J-w4qYrnhE4KgfmPmUPnsmi4JCEg/edit?gid=626431862' },
@@ -1048,6 +1048,8 @@ document.addEventListener('click', function(e) {
   else if (action === 'view-team') { viewTeam(el.dataset.team); }
   else if (action === 'retry-init') { init(); }
   else if (action === 'open-rules') { renderRules(); }
+  else if (action === 'day-top') { renderDayTop10(el.dataset.date); }
+  else if (action === 'set-day-sort') { dayTopSort = el.dataset.sort; renderDayTop10(viewingDayTop); }
   else if (action === 'view-player') {
     // Push current view as the back destination
     const returnFn = currentTab === 'draft'         ? renderDraft
@@ -1056,6 +1058,7 @@ document.addEventListener('click', function(e) {
                    : currentTab === 'stats'         ? renderStats
                    : currentTab === 'scoreboard'    ? renderScoreboard
                    : (currentTab === 'standings' && viewingTeam) ? (() => viewTeam(viewingTeam))
+                   : (currentTab === 'standings' && viewingDayTop) ? (() => renderDayTop10(viewingDayTop))
                    : renderStandings;
     navStack = [returnFn];
     viewPlayerLog(el.dataset.team, el.dataset.player);
@@ -1348,7 +1351,7 @@ function fmtDate(ymd) {
 async function init() {
   updateHeaderTeam();
   setApp(loadingHTML());
-  fetchLastUpdated();   // non-blocking; header shows 'Updated …' when it arrives
+  fetchStatusLine();    // non-blocking; header shows the sheet's status line when it arrives
   loadErrors = [];
   indexes = emptyIndexes();
   scheduleByDate = new Map();
@@ -1574,6 +1577,7 @@ function switchTab(tab) {
   currentTab = tab;
   navStack = [];
   viewingTeam = null;
+  viewingDayTop = null;
   document.querySelectorAll('[data-tab]').forEach(el => {
     el.classList.toggle('active', el.dataset.tab === tab);
     if (el.dataset.tab === tab) {
@@ -1836,10 +1840,10 @@ function recapHTML() {
     const t0 = rc.top[0];
     const names = rc.top.length === 1 ? esc(t0.Player)
       : rc.top.slice(0, 2).map(g => esc(g.Player)).join(' · ') + (rc.top.length > 2 ? ` +${rc.top.length - 2}` : '');
-    out.push(row('Top performer', names,
-      rc.top.length === 1 ? `${schoolTag(t0.School || '')} <span>for ${esc(t0.Team)}</span>` : 'tied for the day’s best',
+    out.push(row('Top performer ›', names,
+      rc.top.length === 1 ? `${schoolTag(t0.School || '')} <span>${esc(t0.Team)}</span>` : 'tied for the day’s best',
       rc.topVal,
-      rc.top.length === 1 ? `data-action="view-player" data-team="${attr(t0.Team)}" data-player="${attr(t0.Player)}"` : ''));
+      `data-action="day-top" data-date="${attr(rc.date)}"`));
   }
   if (rc.bestTeams.length) {
     out.push(row('Team of the day', rc.bestTeams.map(esc).join(' · '), 'highest starter PRA', rc.bestVal,
@@ -1856,40 +1860,30 @@ function recapHTML() {
       `data-action="view-team" data-team="${attr(myTeam)}"`, 'is-me'));
   }
   if (!out.length) return '';
-  return `<div class="recap"><div class="recap-head"><div class="recap-title">The Recap</div><div class="recap-date">${esc(label)}</div></div>${out.join('')}</div>`;
+  return `<div class="recap"><div class="recap-head"><div class="recap-title">Sickos' Digest</div><div class="recap-date">${esc(label)}</div></div>${out.join('')}</div>`;
 }
 
-// ─── LAST-UPDATED STAMP (Draft!Z1 heartbeat written by the stats upload) ───────
-let lastUpdated = null;
-function updatedLabel(d) {
-  const t   = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  const ds  = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  const today = localYMD();
-  const day = ds === today ? 'today' : ds === ymdAddDays(today, -1) ? 'yesterday'
-            : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  return `Updated ${day} ${t}`;
-}
-function applyUpdatedStamp() {
-  const el = document.getElementById('logo-sub');
-  if (!el || !lastUpdated) return;
-  el.textContent = updatedLabel(lastUpdated);
-  el.classList.toggle('stale', Date.now() - lastUpdated.getTime() > 36 * 3600 * 1000);
-}
-async function fetchLastUpdated() {
+// ─── HEADER STATUS LINE (formula result in Sickos Standings!A16) ───────────────
+// Shows e.g. "Standings and stats through all games 11/3" or
+// "LAST UPDATED: 11/4 6:48 AM CT (3 of 10 games today)". Blank = hidden.
+async function fetchStatusLine() {
+  const el = document.getElementById('status-line');
+  if (!el) return;
   try {
-    const url  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Draft&range=Z1&headers=0`;
+    const url  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(STATUS_SHEET)}&range=${encodeURIComponent(STATUS_CELL)}&headers=0`;
     const res  = await fetch(url);
     const text = await res.text();
     const json = JSON.parse(text.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
-    const c    = json.table && json.table.rows && json.table.rows[0] && json.table.rows[0].c && json.table.rows[0].c[0];
-    let d = null;
-    if (c && typeof c.v === 'string') {
-      const m = c.v.match(/^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?/);
-      if (m) d = new Date(+m[1], +m[2], +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
-    }
-    if (!d && c && c.f) { const t = Date.parse(c.f); if (!isNaN(t)) d = new Date(t); }
-    if (d && !isNaN(d.getTime())) { lastUpdated = d; applyUpdatedStamp(); }
-  } catch (e) { console.warn('Could not read last-updated stamp', e); }   // header just keeps its tagline
+    const row  = json.table && json.table.rows && json.table.rows[0];
+    const c    = row && row.c && row.c[0];
+    const t    = c && c.v != null ? String(c.v).trim() : '';
+    el.textContent = t;
+    el.hidden = !t;
+    el.classList.toggle('live', /^last updated/i.test(t));   // mid-update state gets the accent color
+  } catch (e) {
+    console.warn('Could not read header status line', e);
+    el.hidden = true;
+  }
 }
 
 // ─── RULES (read live from the Rules tab; opened from the Standings footer) ────
@@ -1948,9 +1942,55 @@ function renderRules() {
   });
 }
 
+// ─── DAY TOP 10 (opened from the Digest's top performer) ───────────────────────
+let dayTopSort    = 'pra';
+let viewingDayTop = null;   // date being viewed, so Back from a player log returns here
+function dayLabel(ymd) {
+  return ymd === ymdAddDays(localYMD(), -1) ? 'Yesterday'
+    : new Date(ymd + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+function renderDayTop10(date) {
+  viewingDayTop = date; viewingTeam = null;
+  pushNav(() => renderStandings());
+  pushNav(() => renderDayTop10(date));
+  const keyFor = { pra: 'PRA', pts: 'Points', rebs: 'Rebounds', reb: 'Rebounds', ast: 'Assists' };
+  const sortKey = keyFor[dayTopSort] || 'PRA';
+  const n = v => Number(v) || 0;
+  const rows = (gameLog || [])
+    .filter(g => g.Team && g.RosterStatus === 'Starter' && g._ymd === date && String(g.GameNumber) !== 'DNP')
+    .sort((a, b) => n(b[sortKey]) - n(a[sortKey]) || n(b.PRA) - n(a.PRA) || String(a.Player).localeCompare(String(b.Player)))
+    .slice(0, 10);
+  const sorts = [['pra','PRA'],['pts','PTS'],['reb','REB'],['ast','AST']];
+  const sortBtns = sorts.map(([k, label]) =>
+    `<button class="sort-btn ${dayTopSort === k ? 'active' : ''}" data-action="set-day-sort" data-sort="${attr(k)}">${esc(label)}</button>`).join('');
+  const cards = rows.map((g, i) => {
+    const ah  = awayHomeMap[[g.School || '', g.Opponent || ''].sort().join('|') + '|' + date];
+    const rel = ah && ah.neutral === false && ah.away === g.School ? 'at' : 'vs';
+    const isMe = g.Team === myTeam;
+    const col = (label, key, big) => `<div class="stat-col"><div class="stat-val" style="${sortKey === key ? 'color:var(--accent)' : ''}">${n(g[key])}</div><div class="stat-key">${label}</div></div>`;
+    return `<div class="stats-card ${isMe ? 'is-my-player' : ''}" data-action="view-player" data-team="${attr(g.Team)}" data-player="${attr(g.Player)}">
+      <div class="top-rank ${i < 3 ? 'top3' : ''}">${i + 1}</div>
+      <div class="stat-player-info">
+        <div class="stat-player-name">${esc(g.Player)}</div>
+        <div class="stat-player-meta">${schoolTag(g.School || '')} ${rel} ${esc(g.Opponent || '')}</div>
+        <div class="stat-player-meta" style="margin-top:2px">${esc(g.Team)}${isMe ? ' <span style="color:var(--accent)">★</span>' : ''}</div>
+      </div>
+      <div class="stat-nums" style="gap:10px">${col('PRA','PRA')}${col('PTS','Points')}${col('REB','Rebounds')}${col('AST','Assists')}</div>
+    </div>`;
+  }).join('');
+  setApp(`<div class="fade-in">
+    <button class="back-btn" data-action="back">← Standings</button>
+    <div class="section-header"><div class="section-title">Top 10 · ${esc(dayLabel(date))}</div></div>
+    <div style="display:flex;gap:6px;margin-bottom:12px">${sortBtns}</div>
+    ${cards || emptyStateHTML('', 'Nothing to rank', 'No starter results were recorded for this day.')}
+    <div class="data-note">Starters only · tap a player for their game log</div>
+  </div>`);
+}
+
 function renderStandings() {
   navStack = [];
   viewingTeam = null;
+  viewingDayTop = null;
   if (!standings) { setApp(loadingHTML()); return; }
   if (!standings.length) {
     setApp(emptyStateHTML('Standings', 'Standings unavailable', 'No standings data was loaded.', 'Retry data load', 'retry-init'));
@@ -2060,6 +2100,7 @@ function renderRoster() {
 
 function viewTeam(team) {
   viewingTeam = team;
+  viewingDayTop = null;
   pushNav(() => renderStandings());
   pushNav(() => viewTeam(team));
 
