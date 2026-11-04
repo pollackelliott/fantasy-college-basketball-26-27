@@ -4,8 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Sickos College Basketball</title>
+<meta name="theme-color" content="#2a1f14">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sickos">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Noto+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Noto+Sans+Mono:wght@400;500;600&family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&display=swap" rel="stylesheet">
 <style>
   /* ── LIGHT MODE (default) ── */
   :root {
@@ -19,11 +27,12 @@
     --accent:   #c45508;
     --accent2:  #a03800;
     --text:     #2a1c08;
-    --muted:    #8a6535;
+    --muted:    #6b4a1f;
     --green:    #2a6e2a;
     --red:      #b83232;
     --font-mono: 'Noto Sans Mono', monospace;
     --font-body: 'Noto Sans', sans-serif;
+    --font-display: 'Barlow Condensed', 'Noto Sans', sans-serif;
   }
 
   /* ── DARK MODE ── */
@@ -62,9 +71,9 @@
     position: fixed; inset: 0;
     background: repeating-linear-gradient(
       91deg, transparent 0px, transparent 42px,
-      rgba(0,0,0,0.028) 42px, rgba(0,0,0,0.028) 44px,
+      rgba(0,0,0,0.05) 42px, rgba(0,0,0,0.05) 44px,
       transparent 44px, transparent 80px,
-      rgba(255,255,255,0.04) 80px, rgba(255,255,255,0.04) 82px
+      rgba(255,255,255,0.07) 80px, rgba(255,255,255,0.07) 82px
     );
     pointer-events: none; z-index: 0;
     opacity: 1; transition: opacity 0.3s;
@@ -76,14 +85,25 @@
     position: sticky; top: 0; z-index: 100;
     background: var(--hdr);
     padding: 14px 16px 0;
+    border-bottom: 2px solid var(--accent);
     transition: background 0.3s;
+  }
+  /* center-court circle hanging off the sideline */
+  header::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -9px; height: 9px;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 0, transparent 5px, var(--accent) 5px, var(--accent) 7px, transparent 7px);
   }
 
   .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 
-  .logo { display: flex; flex-direction: column; }
+  .logo { display: flex; align-items: center; gap: 9px; }
+  .logo-text { display: flex; flex-direction: column; }
+  .logo-ball { flex-shrink: 0; }
+  .ball-body { fill: var(--accent); }
+  .ball-seam { stroke: var(--hdr); stroke-width: 1.6; fill: none; stroke-linecap: round; }
   .logo-main { font-size: 19px; font-weight: 900; color: var(--hdr-fg); letter-spacing: 0.1px; line-height: 1.1; }
-  .logo-sub { font-size: 8px; font-weight: 500; color: var(--hdr-fg); opacity: 0.5; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+  .logo-sub { font-size: 10px; font-weight: 500; color: var(--hdr-fg); opacity: 0.5; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
 
   .header-right { display: flex; align-items: center; gap: 8px; }
 
@@ -112,7 +132,7 @@
     flex-shrink: 0;
     padding: 10px 16px; text-align: center;
     font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
-    text-transform: uppercase; color: rgba(245,232,208,0.4);
+    text-transform: uppercase; color: rgba(245,232,208,0.58);
     cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s;
     white-space: nowrap;
   }
@@ -136,7 +156,7 @@
   .date-display { flex: 1; text-align: center; cursor: pointer; }
   .date-main { font-size: 15px; font-weight: 700; color: var(--text); transition: color 0.15s; }
   .date-display:hover .date-main { color: var(--accent); }
-  .date-hint { font-family: var(--font-mono); font-size: 9px; color: var(--muted); letter-spacing: 0.6px; text-transform: uppercase; margin-top: 1px; }
+  .date-hint { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 0.6px; text-transform: uppercase; margin-top: 1px; }
   #date-picker-input { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
 
   /* ── MAIN ── */
@@ -159,7 +179,7 @@
     display: flex; align-items: center; justify-content: space-between;
   }
   .totals-label { font-size: 11px; color: var(--hdr-fg); opacity: 0.6; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-  .totals-sub { font-family: var(--font-mono); font-size: 9px; color: var(--hdr-fg); opacity: 0.4; margin-top: 2px; }
+  .totals-sub { font-family: var(--font-mono); font-size: 10px; color: var(--hdr-fg); opacity: 0.7; margin-top: 2px; }
   .totals-val { font-size: 30px; font-weight: 900; color: var(--accent); line-height: 1; }
 
   /* ── GAME CARDS ── */
@@ -173,7 +193,7 @@
   .player-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .player-school { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 
-  .player-status { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; white-space: nowrap; flex-shrink: 0; }
+  .player-status { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; white-space: nowrap; flex-shrink: 0; }
   .status-starter  { background: rgba(42,110,42,0.15); color: var(--green); }
   .status-bench    { background: rgba(196,85,8,0.15);  color: var(--accent); }
   .status-dnp      { background: rgba(184,50,50,0.12); color: var(--red); }
@@ -185,7 +205,7 @@
   .pra-hot  { color: var(--accent); }
   .pra-fire { color: var(--accent2); }
   .pra-dnp-label { font-family: var(--font-mono); font-size: 12px; color: var(--red); line-height: 2.5; }
-  .pra-breakdown { font-family: var(--font-mono); font-size: 9px; color: var(--muted); margin-top: 2px; }
+  .pra-breakdown { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
 
   /* ── STANDINGS ── */
   .standings-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: background 0.12s; }
@@ -196,12 +216,12 @@
   .standings-row.is-me .rank { color: var(--accent); }
   .standing-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); pointer-events: none; }
   .standing-total { font-size: 19px; font-weight: 800; color: var(--text); line-height: 1; }
-  .standing-behind { font-family: var(--font-mono); font-size: 10px; color: var(--red); margin-top: 2px; }
-  .standing-leader { font-family: var(--font-mono); font-size: 10px; color: var(--green); margin-top: 2px; }
+  .standing-behind { font-family: var(--font-mono); font-size: 11px; color: var(--red); margin-top: 2px; }
+  .standing-leader { font-family: var(--font-mono); font-size: 11px; color: var(--green); margin-top: 2px; }
 
   /* ── STATS ── */
   .filter-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
-  .filter-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; white-space: nowrap; }
+  .filter-label { font-family: var(--font-mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; white-space: nowrap; }
   .filter-select { flex: 1; background: none; border: none; border-radius: 7px; color: var(--muted); font-family: var(--font-body); font-size: 11px; font-weight: 700; padding: 5px 4px; text-align: center; appearance: none; -webkit-appearance: none; cursor: pointer; }
   .search-input { width: 100%; background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text); font-family: var(--font-body); font-size: 13px; font-weight: 600; padding: 10px 12px; margin-bottom: 10px; outline: none; }
   .search-input::placeholder { color: var(--muted); opacity: 0.75; }
@@ -220,7 +240,7 @@
   .stat-col { text-align: center; }
   .stat-val { font-size: 16px; font-weight: 800; line-height: 1; color: var(--text); }
   .stat-val.sm { font-size: 14px; }
-  .stat-key { font-family: var(--font-mono); font-size: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+  .stat-key { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
 
   /* Segmented control */
   .seg-control { display: flex; background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 2px; margin-bottom: 10px; gap: 2px; }
@@ -237,11 +257,11 @@
   .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.25); pointer-events: none; }
   .toggle-switch input:checked ~ .toggle-track { background: var(--accent); }
   .toggle-switch input:checked ~ .toggle-thumb { transform: translateX(18px); }
-  .fa-badge { font-size: 9px; font-weight: 400; padding: 1px 6px; border-radius: 3px; background: rgba(138,101,53,0.15); color: var(--muted); letter-spacing: 0.3px; margin-left: 4px; }
-  .tap-hint { font-family: var(--font-mono); font-size: 9px; color: var(--muted); margin-top: 3px; }
+  .fa-badge { font-size: 10px; font-weight: 400; padding: 1px 6px; border-radius: 3px; background: rgba(138,101,53,0.15); color: var(--muted); letter-spacing: 0.3px; margin-left: 4px; }
+  .tap-hint { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-top: 3px; }
 
   /* ── SCHOOL NAMEPLATE ── */
-  .school-tag { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.3px; padding: 1px 6px; border-radius: 3px; background: var(--surface2); color: var(--muted); vertical-align: middle; line-height: 1.7; }
+  .school-tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.3px; padding: 1px 6px; border-radius: 3px; background: var(--surface2); color: var(--muted); vertical-align: middle; line-height: 1.7; }
 
   /* ── GAME LOG ── */
   .gl-row { display: flex; align-items: center; padding: 9px 14px; border-bottom: 1px solid var(--border); gap: 10px; }
@@ -251,7 +271,7 @@
   .gl-mid { flex: 1; min-width: 0; }
   .gl-opp { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .gl-meta { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
-  .gl-breakdown { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
+  .gl-breakdown { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
   .gl-pra { font-size: 22px; font-weight: 900; line-height: 1; min-width: 36px; text-align: right; flex-shrink: 0; color: var(--text); }
   .gl-pra.pra-hot  { color: var(--accent); }
   .gl-pra.pra-fire { color: var(--accent2); }
@@ -285,7 +305,7 @@
   .modal-option.selected { border-color: #c45508; background: rgba(196,85,8,0.1); }
   body.dark .modal-option.selected { background: rgba(212,100,32,0.18); }
   .modal-check { color: #c45508; font-size: 16px; flex-shrink: 0; }
-  .data-note { text-align: center; font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-top: 12px; }
+  .data-note { text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 12px; }
   .error-banner { background: rgba(184,50,50,0.1); border: 1px solid var(--red); border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; font-size: 12px; color: var(--red); font-family: var(--font-mono); }
 
   .fade-in { animation: fadeIn 0.18s ease; }
@@ -307,12 +327,12 @@
     margin-bottom: 6px;
   }
   .draft-pick-num {
-    font-family: var(--font-mono); font-size: 10px;
+    font-family: var(--font-mono); font-size: 11px;
     color: var(--muted); min-width: 28px; flex-shrink: 0;
   }
   .draft-player-info { flex: 1; min-width: 0; }
   .draft-player-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .draft-player-meta { font-size: 10px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .draft-player-meta { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
   .draft-team { font-size: 11px; font-weight: 600; color: var(--text); text-align: right; flex-shrink: 0; max-width: 110px; text-align: right; line-height: 1.3; }
   .draft-team.is-me { color: var(--accent); }
   .draft-pass { color: var(--muted); font-style: italic; font-size: 12px; }
@@ -324,19 +344,65 @@
     border: 1px solid var(--border); border-radius: 9px;
     margin-bottom: 6px;
   }
-  .txn-date { font-family: var(--font-mono); font-size: 10px; color: var(--muted); min-width: 52px; flex-shrink: 0; }
+  .txn-date { font-family: var(--font-mono); font-size: 11px; color: var(--muted); min-width: 52px; flex-shrink: 0; }
   .txn-info { flex: 1; min-width: 0; }
   .txn-player { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .txn-meta { font-size: 10px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .txn-meta { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
   .txn-team { font-size: 11px; font-weight: 600; color: var(--text); text-align: right; flex-shrink: 0; max-width: 100px; line-height: 1.3; }
   .txn-badge {
-    font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
     text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; flex-shrink: 0;
   }
   .txn-added   { background: rgba(42,110,42,0.15);  color: var(--green); }
   .txn-started { background: rgba(42,110,42,0.15);  color: var(--green); }
   .txn-dropped { background: rgba(184,50,50,0.12);  color: var(--red); }
   .txn-benched { background: rgba(196,85,8,0.15);   color: var(--accent); }
+  /* ── DISPLAY TYPE (scoreboard-style numerals and headings) ── */
+  .logo-main, .section-title, .totals-val, .pra-big, .rank, .standing-total, .stat-val,
+  .gl-pra, .date-main, .empty-title, .modal-title, .recap-title, .recap-n, .rules-title { font-family: var(--font-display); }
+  .logo-main { font-size: 25px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: 0.6px; }
+  .logo-sub { font-size: 10px; opacity: 0.6; }
+  .logo-sub.stale { color: var(--accent); opacity: 1; }
+  .section-title { font-size: 21px; font-weight: 800; letter-spacing: 1px; }
+  .totals-val { font-size: 40px; font-weight: 800; }
+  .pra-big { font-size: 36px; font-weight: 800; }
+  .rank { font-size: 30px; font-weight: 800; min-width: 36px; }
+  .standing-total { font-size: 26px; font-weight: 800; }
+  .stat-val { font-size: 21px; font-weight: 700; }
+  .stat-val.sm { font-size: 18px; }
+  .gl-pra { font-size: 30px; font-weight: 800; min-width: 44px; }
+  .date-main { font-size: 21px; font-weight: 700; letter-spacing: 0.5px; }
+  .empty-title { font-size: 20px; font-weight: 800; letter-spacing: 0.5px; }
+  .modal-title { font-size: 20px; font-weight: 800; }
+
+  /* ── DAILY RECAP ── */
+  .recap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  .recap-head { display: flex; align-items: baseline; justify-content: space-between; padding: 9px 14px; background: var(--hdr); }
+  .recap-title { font-size: 19px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: 0.8px; color: var(--hdr-fg); }
+  .recap-date { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--hdr-fg); opacity: 0.65; }
+  .recap-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .recap-row:last-child { border-bottom: none; }
+  .recap-row[data-action] { cursor: pointer; }
+  .recap-row[data-action]:active { background: var(--surface2); }
+  .recap-row.is-me { background: rgba(196,85,8,0.08); }
+  .recap-info { flex: 1; min-width: 0; pointer-events: none; }
+  .recap-k { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .recap-main { font-size: 14px; font-weight: 700; color: var(--text); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .recap-sub { font-size: 12px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .recap-n { font-size: 34px; font-weight: 800; line-height: 1; color: var(--accent); flex-shrink: 0; pointer-events: none; }
+
+  /* ── RULES + FOOTER LINKS ── */
+  .rules-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px 8px; margin-bottom: 10px; }
+  .rules-title { font-size: 19px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--accent); margin-bottom: 6px; }
+  .rule-item { font-size: 14px; line-height: 1.5; color: var(--text); padding: 0 0 6px 16px; position: relative; }
+  .rule-item::before { content: '•'; position: absolute; left: 3px; color: var(--accent); }
+  .rule-item.l1 { padding-left: 34px; font-size: 13px; }
+  .rule-item.l1::before { content: '–'; left: 21px; color: var(--muted); }
+  .site-foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; margin-top: 18px; }
+  .link-btn { background: none; border: none; padding: 4px 2px; font-family: var(--font-body); font-size: 13px; font-weight: 700; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .link-btn span { font-weight: 500; color: var(--muted); text-decoration: none; display: inline-block; }
+  .past-link { display: block; padding: 8px 0; font-size: 14px; font-weight: 600; color: var(--accent); border-bottom: 1px solid var(--border); text-decoration: none; }
+  .past-link:last-child { border-bottom: none; }
 </style>
 </head>
 <body>
@@ -344,8 +410,14 @@
 <header>
   <div class="header-top">
     <div class="logo">
-      <div class="logo-main">Sickos League</div>
-      <div class="logo-sub">Fantasy College Basketball</div>
+      <svg class="logo-ball" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+        <circle class="ball-body" cx="16" cy="16" r="14.5"/>
+        <path class="ball-seam" d="M16 1.5V30.5M1.5 16H30.5M6 6.3C11.2 11.5 11.2 20.5 6 25.7M26 6.3C20.8 11.5 20.8 20.5 26 25.7"/>
+      </svg>
+      <div class="logo-text">
+        <div class="logo-main">Sickos League</div>
+        <div class="logo-sub" id="logo-sub">Fantasy College Basketball</div>
+      </div>
     </div>
     <div class="header-right">
       <div class="team-pill" id="team-pill-btn">
@@ -393,10 +465,15 @@
 const SHEET_ID     = '1Ne5P3MxhLQckauqmeOZHlKdq6cshtgx0TtsSKenvtgo';
 const SEASON_LABEL = '2026–27';
 const SEASON_START = '2026-11-01';
-const SEASON_END   = '2027-03-14';
+const SEASON_END   = '2027-03-15';
 const FA_MIN_PRAG  = 10;               // minimum PRA/G to show as free agent
 const DRAFT_SUPP_RANGE = 'A255:G369';  // supplemental (Nov/Dec/Jan/Feb) picks on the Draft tab
 const GAME_LOG_TAB = 'Game Log (locked)';
+const PAST_SEASONS = [
+  { label: '2025–26 season site',  url: 'https://pollackelliott.github.io/fantasy-college-basketball/' },
+  { label: '2025–26 season sheet', url: 'https://docs.google.com/spreadsheets/d/1SDyVjpmVZuoq3H7J-w4qYrnhE4KgfmPmUPnsmi4JCEg/edit?gid=626431862' },
+  { label: '2024–25 season sheet', url: 'https://docs.google.com/spreadsheets/d/1dWYK1nLgvPMBTHtwpKf5_F5RaGovsa2i8cE7UDhblVQ/edit?usp=sharing' },
+];
 // master_schedule column (0 = column A) that says whether a game is at a neutral site
 // (TRUE/FALSE, Yes/No, etc). Leave null until set: every game then keeps the word "vs".
 const SCHEDULE_NEUTRAL_COL = 10;   // column K
@@ -970,6 +1047,7 @@ document.addEventListener('click', function(e) {
   if (action === 'score-filter') { scoreFilter = el.dataset.team; renderScoreboard(); }
   else if (action === 'view-team') { viewTeam(el.dataset.team); }
   else if (action === 'retry-init') { init(); }
+  else if (action === 'open-rules') { renderRules(); }
   else if (action === 'view-player') {
     // Push current view as the back destination
     const returnFn = currentTab === 'draft'         ? renderDraft
@@ -1270,6 +1348,7 @@ function fmtDate(ymd) {
 async function init() {
   updateHeaderTeam();
   setApp(loadingHTML());
+  fetchLastUpdated();   // non-blocking; header shows 'Updated …' when it arrives
   loadErrors = [];
   indexes = emptyIndexes();
   scheduleByDate = new Map();
@@ -1600,7 +1679,7 @@ function renderScoreboard(errors) {
     const anyToday = dayRows.length;
     cards = emptyStateHTML(
       anyToday ? 'Search' : 'Calendar',
-      anyToday ? 'No matching players' : 'No games on this date',
+      anyToday ? 'No matching players' : 'Quiet night.',
       `${anyToday ? `No players from <strong>${esc(scoreFilter)}</strong><br>played on this date.`
                   : (viewDate >= localYMD() ? 'None of the rostered players have a game scheduled on this date.' : 'No games were played on this date.')}
        <br><span class="state-subtle">Use the date arrows to find a game day.</span>`
@@ -1619,7 +1698,7 @@ function renderScoreboard(errors) {
         const sCls   = isDNP ? 'status-dnp' : status==='Starter' ? 'status-starter' : status==='Bench' ? 'status-bench' : 'status-inactive';
         const praCls = isDNP ? '' : pra>=40 ? 'pra-fire' : pra>=28 ? 'pra-hot' : '';
         const teamTag = scoreFilter === 'ALL'
-          ? `<span style="font-size:10px;color:var(--muted)"> · ${esc(p.Team||'')}</span>` : '';
+          ? `<span style="font-size:11px;color:var(--muted)"> · ${esc(p.Team||'')}</span>` : '';
         return `<div class="player-row" data-action="view-player" data-team="${attr(p.Team||'')}" data-player="${attr(p.Player||'')}" style="cursor:pointer">
           <div class="player-info" style="pointer-events:none">
             <div class="player-name">${esc(p.Player||'')}${teamTag}</div>
@@ -1637,8 +1716,8 @@ function renderScoreboard(errors) {
       const venue    = locationMap[venueKey] || '';
       cards += `<div class="game-card fade-in">
         <div class="game-card-header">
-          <div class="game-matchup">${schoolTag(g.away||'')} <span style="font-size:10px;color:var(--muted);font-weight:400">${vsOrAt(g.neutral)}</span> ${schoolTag(g.home||'')}</div>
-          ${venue ? `<div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:var(--font-mono);letter-spacing:0.2px">${esc(venue)}</div>` : ''}
+          <div class="game-matchup">${schoolTag(g.away||'')} <span style="font-size:11px;color:var(--muted);font-weight:400">${vsOrAt(g.neutral)}</span> ${schoolTag(g.home||'')}</div>
+          ${venue ? `<div style="font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--font-mono);letter-spacing:0.2px">${esc(venue)}</div>` : ''}
         </div>
         ${playerRows}</div>`;
     });
@@ -1659,7 +1738,7 @@ function renderScoreboard(errors) {
         const status = p.RosterStatus || '';
         const sCls   = status === 'Starter' ? 'status-starter' : status === 'Bench' ? 'status-bench' : 'status-inactive';
         const teamTag = scoreFilter === 'ALL'
-          ? `<span style="font-size:10px;color:var(--muted)"> · ${esc(p.Team||'')}</span>` : '';
+          ? `<span style="font-size:11px;color:var(--muted)"> · ${esc(p.Team||'')}</span>` : '';
         return `<div class="player-row" data-action="view-player" data-team="${attr(p.Team||'')}" data-player="${attr(p.Player||'')}" style="cursor:pointer">
           <div class="player-info" style="pointer-events:none">
             <div class="player-name">${esc(p.Player||'')}${teamTag}</div>
@@ -1671,9 +1750,9 @@ function renderScoreboard(errors) {
       }).join('');
       cards += `<div class="game-card fade-in">
         <div class="game-card-header">
-          <div class="game-matchup">${schoolTag(g.away||'')} <span style="font-size:10px;color:var(--muted);font-weight:400">${vsOrAt(g.neutral)}</span> ${schoolTag(g.home||'')}</div>
+          <div class="game-matchup">${schoolTag(g.away||'')} <span style="font-size:11px;color:var(--muted);font-weight:400">${vsOrAt(g.neutral)}</span> ${schoolTag(g.home||'')}</div>
           ${(g.time || g.tv) ? `<div style="font-size:11px;color:var(--text);margin-top:4px;font-weight:700">${esc([timeLabel(g.time), g.tv].filter(Boolean).join(' · '))}</div>` : ''}
-          ${g.venue ? `<div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:var(--font-mono);letter-spacing:0.2px">${esc(g.venue)}</div>` : ''}
+          ${g.venue ? `<div style="font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--font-mono);letter-spacing:0.2px">${esc(g.venue)}</div>` : ''}
         </div>
         ${rowsHTML}</div>`;
     });
@@ -1693,6 +1772,182 @@ function renderScoreboard(errors) {
 }
 
 // ─── STANDINGS ─────────────────────────────────────────────────────────────────
+// ─── DAILY RECAP ───────────────────────────────────────────────────────────────
+function ymdAddDays(ymd, n) {
+  const d = new Date(ymd + 'T12:00:00'); d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function ordinalN(n) {
+  const s = ['th','st','nd','rd'], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+// Most recent completed day (before today) with starter results, built from the game log.
+function computeRecap() {
+  if (!gameLog || !gameLog.length) return null;
+  const today = localYMD();
+  const rows  = gameLog.filter(g => g.Team && g.RosterStatus === 'Starter' && g._ymd < today);
+  if (!rows.length) return null;
+  const pra  = g => Number(g.PRA) || 0;
+  const date = rows.reduce((m, g) => g._ymd > m ? g._ymd : m, '');
+  const dayRows = rows.filter(g => g._ymd === date);
+
+  const played = dayRows.filter(g => String(g.GameNumber) !== 'DNP').sort((a, b) => pra(b) - pra(a));
+  const top    = played.length ? played.filter(g => pra(g) === pra(played[0])) : [];
+
+  const dayMap = new Map();
+  dayRows.forEach(g => dayMap.set(g.Team, (dayMap.get(g.Team) || 0) + pra(g)));
+  const teamsDay = [...dayMap.entries()].sort((a, b) => b[1] - a[1]);
+  const bestVal  = teamsDay.length ? teamsDay[0][1] : 0;
+  const bestTeams = teamsDay.filter(([, v]) => v === bestVal).map(([t]) => t);
+  const avg = teamsDay.length ? teamsDay.reduce((n, [, v]) => n + v, 0) / teamsDay.length : 0;
+  let mine = null;
+  if (dayMap.has(myTeam)) {
+    const v = dayMap.get(myTeam);
+    mine = { pra: v, rank: 1 + teamsDay.filter(([, x]) => x > v).length, of: teamsDay.length, diff: Math.round(v - avg), avg: Math.round(avg) };
+  }
+
+  // Biggest mover: who climbed the most places in the total-PRA standings that day
+  const totals = cut => { const m = new Map(); rows.forEach(g => { if (g._ymd <= cut) m.set(g.Team, (m.get(g.Team) || 0) + pra(g)); }); return m; };
+  const rankOf = m => { const arr = [...m.entries()]; const r = new Map(); arr.forEach(([t, v]) => r.set(t, 1 + arr.filter(([, x]) => x > v).length)); return r; };
+  let mover = null;
+  const before = totals(ymdAddDays(date, -1));
+  if (before.size) {
+    const rb = rankOf(before), ra = rankOf(totals(date));
+    ra.forEach((r, t) => {
+      if (!rb.has(t)) return;
+      const d = rb.get(t) - r;
+      if (d > 0 && (!mover || d > mover.d || (d === mover.d && r < mover.after))) mover = { team: t, d, before: rb.get(t), after: r };
+    });
+  }
+  return { date, top, topVal: top.length ? pra(top[0]) : 0, bestTeams, bestVal, mine, mover };
+}
+
+function recapHTML() {
+  const rc = computeRecap();
+  if (!rc) return '';
+  const label = rc.date === ymdAddDays(localYMD(), -1)
+    ? 'Yesterday'
+    : new Date(rc.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const row = (k, main, sub, num, attrs, cls) => `<div class="recap-row ${cls || ''}" ${attrs || ''}>
+      <div class="recap-info"><div class="recap-k">${k}</div><div class="recap-main">${main}</div>${sub ? `<div class="recap-sub">${sub}</div>` : ''}</div>
+      <div class="recap-n">${num}</div></div>`;
+  const out = [];
+  if (rc.top.length) {
+    const t0 = rc.top[0];
+    const names = rc.top.length === 1 ? esc(t0.Player)
+      : rc.top.slice(0, 2).map(g => esc(g.Player)).join(' · ') + (rc.top.length > 2 ? ` +${rc.top.length - 2}` : '');
+    out.push(row('Top performer', names,
+      rc.top.length === 1 ? `${schoolTag(t0.School || '')} <span>for ${esc(t0.Team)}</span>` : 'tied for the day’s best',
+      rc.topVal,
+      rc.top.length === 1 ? `data-action="view-player" data-team="${attr(t0.Team)}" data-player="${attr(t0.Player)}"` : ''));
+  }
+  if (rc.bestTeams.length) {
+    out.push(row('Team of the day', rc.bestTeams.map(esc).join(' · '), 'highest starter PRA', rc.bestVal,
+      rc.bestTeams.length === 1 ? `data-action="view-team" data-team="${attr(rc.bestTeams[0])}"` : ''));
+  }
+  if (rc.mover) {
+    out.push(row('Biggest mover', esc(rc.mover.team), `${ordinalN(rc.mover.before)} → ${ordinalN(rc.mover.after)} in the standings`,
+      `▲${rc.mover.d}`, `data-action="view-team" data-team="${attr(rc.mover.team)}"`));
+  }
+  if (rc.mine) {
+    const m = rc.mine;
+    out.push(row('Your day', `${ordinalN(m.rank)} of ${m.of} teams`,
+      `${m.diff >= 0 ? '+' : ''}${m.diff} vs the league average (${m.avg})`, m.pra,
+      `data-action="view-team" data-team="${attr(myTeam)}"`, 'is-me'));
+  }
+  if (!out.length) return '';
+  return `<div class="recap"><div class="recap-head"><div class="recap-title">The Recap</div><div class="recap-date">${esc(label)}</div></div>${out.join('')}</div>`;
+}
+
+// ─── LAST-UPDATED STAMP (Draft!Z1 heartbeat written by the stats upload) ───────
+let lastUpdated = null;
+function updatedLabel(d) {
+  const t   = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const ds  = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const today = localYMD();
+  const day = ds === today ? 'today' : ds === ymdAddDays(today, -1) ? 'yesterday'
+            : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `Updated ${day} ${t}`;
+}
+function applyUpdatedStamp() {
+  const el = document.getElementById('logo-sub');
+  if (!el || !lastUpdated) return;
+  el.textContent = updatedLabel(lastUpdated);
+  el.classList.toggle('stale', Date.now() - lastUpdated.getTime() > 36 * 3600 * 1000);
+}
+async function fetchLastUpdated() {
+  try {
+    const url  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Draft&range=Z1&headers=0`;
+    const res  = await fetch(url);
+    const text = await res.text();
+    const json = JSON.parse(text.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
+    const c    = json.table && json.table.rows && json.table.rows[0] && json.table.rows[0].c && json.table.rows[0].c[0];
+    let d = null;
+    if (c && typeof c.v === 'string') {
+      const m = c.v.match(/^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?/);
+      if (m) d = new Date(+m[1], +m[2], +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+    }
+    if (!d && c && c.f) { const t = Date.parse(c.f); if (!isNaN(t)) d = new Date(t); }
+    if (d && !isNaN(d.getTime())) { lastUpdated = d; applyUpdatedStamp(); }
+  } catch (e) { console.warn('Could not read last-updated stamp', e); }   // header just keeps its tagline
+}
+
+// ─── RULES (read live from the Rules tab; opened from the Standings footer) ────
+let rulesData = null;
+function parseRuleBlock(text) {
+  const lines = String(text).split('\n');
+  const items = [];
+  lines.slice(1).forEach(l => {
+    if (!l.trim()) return;
+    const m = l.match(/^(\s*)-\s*(.*)$/);
+    if (m) items.push({ lvl: m[1].length >= 2 ? 1 : 0, text: m[2] });
+    else if (items.length) items[items.length - 1].text += ' ' + l.trim();
+    else items.push({ lvl: 0, text: l.trim() });
+  });
+  return { title: lines[0].trim(), items };
+}
+async function fetchRules() {
+  const url  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Rules&headers=0`;
+  const res  = await fetch(url);
+  const text = await res.text();
+  const json = JSON.parse(text.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
+  const cells = [];
+  (json.table.cols || []).forEach(c => { if (c && typeof c.label === 'string') cells.push(c.label); });
+  (json.table.rows || []).forEach(r => (r.c || []).forEach(c => { if (c && typeof c.v === 'string') cells.push(c.v); }));
+  const seen = new Set(), out = [];
+  cells.forEach(t => {
+    if (t.length > 40 && /^[^\n]+\n\s*-\s/.test(t) && !seen.has(t)) { seen.add(t); out.push(parseRuleBlock(t)); }
+  });
+  if (!out.length) throw new Error('No rules found');
+  return out;
+}
+function rulesBodyHTML() {
+  const blocks = rulesData.map(b => `<div class="rules-card"><div class="rules-title">${esc(b.title)}</div>
+    ${b.items.map(i => `<div class="rule-item ${i.lvl ? 'l1' : ''}">${esc(i.text)}</div>`).join('')}</div>`).join('');
+  const past = `<div class="rules-card"><div class="rules-title">Past seasons</div>
+    ${PAST_SEASONS.map(p => `<a class="past-link" href="${attr(p.url)}" target="_blank" rel="noopener">${esc(p.label)} →</a>`).join('')}</div>`;
+  return blocks + past;
+}
+function renderRules() {
+  pushNav(() => renderStandings());
+  pushNav(() => renderRules());
+  const shell = body => setApp(`<div class="fade-in" data-rules-root>
+    <button class="back-btn" data-action="back">← Standings</button>
+    <div class="section-header"><div class="section-title">League Rules</div></div>
+    ${body}</div>`);
+  if (rulesData) { shell(rulesBodyHTML()); return; }
+  shell(loadingHTML());
+  fetchRules().then(d => {
+    rulesData = d;
+    const app = document.getElementById('app');
+    if (app.innerHTML.indexOf('data-rules-root') !== -1) shell(rulesBodyHTML());   // still on this page
+  }).catch(() => {
+    const app = document.getElementById('app');
+    if (app.innerHTML.indexOf('data-rules-root') !== -1)
+      shell(emptyStateHTML('Rules', 'Couldn’t load the rules', 'Give it another try, or read them on the Rules tab of the league sheet.', 'Try again', 'open-rules'));
+  });
+}
+
 function renderStandings() {
   navStack = [];
   viewingTeam = null;
@@ -1715,9 +1970,14 @@ function renderStandings() {
   }).join('');
   setApp(`<div class="fade-in">
     ${errorBannerHTML(loadErrors)}
+    ${recapHTML()}
     <div class="section-header"><div class="section-title">STANDINGS</div><div class="badge">${localYMD() > SEASON_END ? 'Final · tap for roster' : 'Tap for roster'}</div></div>
     ${rows}
     <div class="data-note">PRA = Points + Rebounds + Assists · Starter games only</div>
+    <div class="site-foot">
+      <button class="link-btn" data-action="open-rules">The rules <span>(read before complaining)</span></button>
+      <a class="link-btn" href="${attr(PAST_SEASONS[0].url)}" target="_blank" rel="noopener">Last season’s site</a>
+    </div>
   </div>`);
 }
 
@@ -1737,7 +1997,7 @@ function rosterCardsHTML(team, rows) {
       <div class="stat-player-info">
         <div class="stat-player-name">${esc(r.Player)}</div>
         <div class="stat-player-meta">${schoolTag(r.School||'')} ${esc(r.Conference||'')}
-          <span class="player-status ${sCls}" style="padding:1px 6px;font-size:9px;margin-left:4px">${esc(r.RosterStatus||'')}</span>
+          <span class="player-status ${sCls}" style="padding:1px 6px;font-size:10px;margin-left:4px">${esc(r.RosterStatus||'')}</span>
         </div>
         <div class="tap-hint">tap for game log</div>
       </div>
@@ -1790,7 +2050,7 @@ function renderRoster() {
     </div>
     <div class="seg-control" style="margin-bottom:12px;position:relative">
       <select class="filter-select" id="roster-team-select" style="width:100%;padding-right:24px">${teamOpts}</select>
-      <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:10px">▾</span>
+      <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:11px">▾</span>
     </div>
     <input class="search-input" id="roster-search-input" type="search" placeholder="Search this roster" value="${attr(rosterSearch)}" autocomplete="off">
     ${rosterSummaryHTML(selectedTeam, allRows)}
@@ -1862,7 +2122,7 @@ function viewPlayerLog(team, playerArg) {
       <div class="gl-mid">
         <div class="gl-opp">${schoolTag(r.Opponent||'')}</div>
         <div class="gl-meta">
-          ${showBadge?`<span class="player-status ${sCls}" style="padding:1px 5px;font-size:9px">${esc(status)}</span>`:''}
+          ${showBadge?`<span class="player-status ${sCls}" style="padding:1px 5px;font-size:10px">${esc(status)}</span>`:''}
           ${!isDNP?`<span class="gl-breakdown">${num(r.Minutes)}m · ${num(r.Points)}p ${num(r.Rebounds)}r ${num(r.Assists)}a</span>`:''}
         </div>
       </div>
@@ -1995,7 +2255,7 @@ function renderStats() {
       <div class="stat-player-info">
         <div class="stat-player-name">${esc(r.Player)}</div>
         <div class="stat-player-meta">${schoolTag(r.School||'')} ${esc(r.Conference||'')}
-          ${!isFA ? '<span class="player-status ' + sCls + '" style="padding:1px 5px;font-size:9px;margin-left:4px">' + esc(statusLabel) + '</span>' : ''}
+          ${!isFA ? '<span class="player-status ' + sCls + '" style="padding:1px 5px;font-size:10px;margin-left:4px">' + esc(statusLabel) + '</span>' : ''}
         </div>
         <div class="stat-player-meta" style="margin-top:2px">${teamLine}</div>
       </div>
@@ -2034,8 +2294,8 @@ function renderStats() {
     <div class="section-header">
       <div class="section-title">PLAYER STATS</div>
       <div class="seg-control" style="margin-bottom:0;width:238px;padding:2px;flex-shrink:0">
-        <button class="seg-btn ${statsScope==='sicko'?'active':''}" style="font-size:9px;padding:4px 3px;white-space:nowrap" data-action="set-stats-scope" data-scope="sicko">Sicko Games Only</button>
-        <button class="seg-btn ${statsScope==='all'?'active':''}" style="font-size:9px;padding:4px 3px;white-space:nowrap" data-action="set-stats-scope" data-scope="all">All Games</button>
+        <button class="seg-btn ${statsScope==='sicko'?'active':''}" style="font-size:10px;padding:4px 3px;white-space:nowrap" data-action="set-stats-scope" data-scope="sicko">Sicko Games Only</button>
+        <button class="seg-btn ${statsScope==='all'?'active':''}" style="font-size:10px;padding:4px 3px;white-space:nowrap" data-action="set-stats-scope" data-scope="all">All Games</button>
       </div>
     </div>
     ${faToggle}
@@ -2043,11 +2303,11 @@ function renderStats() {
     <div style="display:flex;gap:8px;margin-bottom:8px">
       <div class="seg-control" style="flex:1;margin-bottom:0;position:relative">
         <select class="filter-select" id="stat-team-select" style="width:100%;padding-right:24px">${teamOpts}</select>
-        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:10px">▾</span>
+        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:11px">▾</span>
       </div>
       <div class="seg-control" style="flex:1;margin-bottom:0;position:relative">
         <select class="filter-select" id="stat-conf-select" style="width:100%;padding-right:24px">${confOpts}</select>
-        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:10px">▾</span>
+        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:11px">▾</span>
       </div>
     </div>
     <div class="seg-control">
@@ -2160,7 +2420,7 @@ function renderDraft() {
     }).join('');
 
     return `<div id="draft-round-${attr(round)}" class="draft-section-header" style="display:flex;align-items:center;justify-content:space-between">
-      <span>${esc(label)}</span><span style="font-size:10px">${esc(badge)}</span>
+      <span>${esc(label)}</span><span style="font-size:11px">${esc(badge)}</span>
     </div>${rows}`;
   }).filter(Boolean).join('');
 
@@ -2173,11 +2433,11 @@ function renderDraft() {
     <div style="display:flex;gap:8px;margin-bottom:8px">
       <div class="seg-control" style="flex:1;margin-bottom:0;position:relative">
         <select class="filter-select" id="draft-team-select" style="width:100%;padding-right:24px">${teamOpts}</select>
-        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:10px">▾</span>
+        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:11px">▾</span>
       </div>
       <div class="seg-control" style="flex:1;margin-bottom:0;position:relative">
         <select class="filter-select" id="draft-conf-select" style="width:100%;padding-right:24px">${confOpts}</select>
-        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:10px">▾</span>
+        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:11px">▾</span>
       </div>
     </div>
     ${jumpBtns}
@@ -2226,11 +2486,11 @@ function renderTransactions() {
     <div style="display:flex;gap:8px;margin-bottom:12px">
       <div class="seg-control" style="flex:1;margin-bottom:0;position:relative">
         <select class="filter-select" id="txn-team-select" style="width:100%;padding-right:24px">${teamOpts}</select>
-        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:10px">▾</span>
+        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:11px">▾</span>
       </div>
       <div class="seg-control" style="flex:1;margin-bottom:0;position:relative">
         <select class="filter-select" id="txn-type-select" style="width:100%;padding-right:24px">${typeOpts}</select>
-        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:10px">▾</span>
+        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:11px">▾</span>
       </div>
     </div>
     ${cards || emptyStateHTML('Moves', 'No transactions match', 'Try a different team or move type filter.')}
@@ -2241,7 +2501,7 @@ function renderTransactions() {
 
 function setApp(html) { document.getElementById('app').innerHTML = html; }
 function loadingHTML() {
-  return '<div class="loading">Loading<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></div>';
+  return '<div class="loading">Warming up<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></div>';
 }
 
 // Draft round ordinal: 1→1st … 18→18th, 19/Nov→Nov, 20/Dec→Dec, 21/Jan→Jan, 22/Feb→Feb
