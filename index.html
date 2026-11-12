@@ -439,6 +439,13 @@
   details.team-day[open] .chev { transform: rotate(90deg); }
   .dcard .txn-row { border: none; border-bottom: 1px solid var(--border); border-radius: 0; margin: 0; }
   .dcard .txn-row:last-child { border-bottom: none; }
+
+  /* ── STANDINGS STAT STRIP ── */
+  .standing-main { flex: 1; min-width: 0; pointer-events: none; }
+  .st-strip { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 4px; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); }
+  .st-strip b { font-weight: 600; color: var(--text); }
+  .st-strip i { font-style: normal; font-size: 9px; letter-spacing: 0.4px; }
+  .st-strip .hl b { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -958,7 +965,8 @@ const PS = { Team:0, DraftRound:1, Player:2, School:3, Conference:4, GamesPlayed
 const PS_SKIP = 0;
 
 // api_standings: no meta row, rows[] = data
-const ST = { Rank:0, Team:1, TotalPRA:2, PRABehind:3 };
+// cols: 0=Rank, 1=Team, 2=TotalPRA, 3=PRABehind, 4=PRA/G, 5=PPG, 6=RPG, 7=APG
+const ST = { Rank:0, Team:1, TotalPRA:2, PRABehind:3, PRAG:4, PPG:5, RPG:6, APG:7 };
 
 // ─── STATE ─────────────────────────────────────────────────────────────────────
 let myTeam         = localStorage.getItem('sickos_team') || null;
@@ -970,6 +978,7 @@ let statTeamFilter = 'ALL';
 let statConfFilter = 'ALL';
 let statView       = 'total';
 let statsScope     = 'sicko';  // 'sicko' = rostered Sicko games only, 'all' = full college season stats
+let standingsSort  = 'total';  // 'total' | 'prag'
 let rosterTeamFilter = myTeam || null;
 let rosterSearch   = '';
 let statSearch     = '';
@@ -1090,6 +1099,7 @@ document.addEventListener('click', function(e) {
   else if (action === 'open-rules') { renderRules(); }
   else if (action === 'day-top') { renderDayTop10(el.dataset.date); }
   else if (action === 'set-day-sort') { dayTopSort = el.dataset.sort; renderDayTop10(viewingDayTop); }
+  else if (action === 'set-standings-sort') { standingsSort = el.dataset.sort; renderStandings(); }
   else if (action === 'view-player') {
     // Push current view as the back destination
     const returnFn = currentTab === 'draft'         ? renderDraft
@@ -1242,14 +1252,17 @@ async function fetchFreeAgents() {
     const rows = await gvizFetch(GAME_LOG_TAB); // full tab, every player
 
     // Build active roster set directly from raw psResCache (all rows, no PS_SKIP)
-    // so we catch ALL Starter/Bench players including any skipped by PS_SKIP
+    // so we catch ALL Starter/Bench players including any skipped by PS_SKIP.
+    // Keyed on Player|School so same-named players at different schools aren't
+    // mistaken for each other (matches the aggKey used below).
     const activeRosterSet = new Set();
     if (psResCache) {
       for (let i = 0; i < psResCache.length; i++) {
         const r  = psResCache[i];
         const pl = String(cell(r, PS.Player)||'').trim();
+        const sc = String(cell(r, PS.School)||'').trim();
         const st = String(cell(r, PS.RosterStatus)||'').trim();
-        if (pl && (st === 'Starter' || st === 'Bench')) activeRosterSet.add(pl);
+        if (pl && (st === 'Starter' || st === 'Bench')) activeRosterSet.add(pl + '|' + sc);
       }
     }
 
@@ -1322,7 +1335,7 @@ async function fetchFreeAgents() {
       addToAgg(allAgg, allSeasonRawLogs, aggKey, player, school, conf, dayTeam, dayStatus, g, pra, pts, reb, ast, mins, isDNP);
 
       // Free agents: skip anyone currently Starter/Bench on a league roster
-      if (activeRosterSet.has(player)) continue;
+      if (activeRosterSet.has(aggKey)) continue;
       addToAgg(agg, faRawLogs, aggKey, player, school, conf, 'Free Agent', 'Free Agent', g, pra, pts, reb, ast, mins, isDNP);
     }
 
@@ -1438,7 +1451,9 @@ async function init() {
       const rank = cell(r, ST.Rank), team = cell(r, ST.Team);
       if (rank == null || isNaN(Number(rank)) || !team) continue;
       standings.push({ Rank: Number(rank), Team: String(team),
-                       TotalPRA: cell(r, ST.TotalPRA), PRABehind: cell(r, ST.PRABehind) });
+                       TotalPRA: cell(r, ST.TotalPRA), PRABehind: cell(r, ST.PRABehind),
+                       PRAG: cell(r, ST.PRAG), PPG: cell(r, ST.PPG),
+                       RPG: cell(r, ST.RPG),   APG: cell(r, ST.APG) });
     }
     allSickos = standings.map(r => r.Team);
   } else { standings = []; errors.push('Standings failed'); console.error(stRes.reason); }
@@ -2201,11 +2216,26 @@ function renderStandings() {
     setApp(emptyStateHTML('Standings', 'Standings unavailable', 'No standings data was loaded.', 'Retry data load', 'retry-init'));
     return;
   }
-  const rows = standings.map((r, i) => {
-    const isMe = r.Team === myTeam;
+  // Official rank (by Total PRA) is always the big number; the toggle only re-orders rows.
+  const sorted = standingsSort === 'prag'
+    ? [...standings].sort((a, b) => num(b.PRAG) - num(a.PRAG) || a.Rank - b.Rank)
+    : standings;
+  const f1 = v => num(v).toFixed(1);
+  const rows = sorted.map(r => {
+    const isMe   = r.Team === myTeam;
+    const hasPer = r.PRAG != null && r.PRAG !== '';
+    const hl     = standingsSort === 'prag' ? ' class="hl"' : '';
+    const strip  = hasPer ? `<div class="st-strip">
+        <span${hl}><b>${f1(r.PRAG)}</b> <i>PRA/G</i></span>
+        <span><b>${f1(r.PPG)}</b> <i>PTS</i></span>
+        <span><b>${f1(r.RPG)}</b> <i>REB</i></span>
+        <span><b>${f1(r.APG)}</b> <i>AST</i></span></div>` : '';
     return `<div class="standings-row ${isMe?'is-me':''}" data-action="view-team" data-team="${attr(r.Team)}">
-      <div class="rank ${i<3?'top3':''}">${r.Rank}</div>
-      <div class="standing-name">${esc(r.Team)}${isMe?' <span style="color:var(--accent)">★</span>':''}</div>
+      <div class="rank ${r.Rank<=3?'top3':''}">${r.Rank}</div>
+      <div class="standing-main">
+        <div class="standing-name">${esc(r.Team)}${isMe?' <span style="color:var(--accent)">★</span>':''}</div>
+        ${strip}
+      </div>
       <div style="text-align:right;pointer-events:none">
         <div class="standing-total">${fmtInt(r.TotalPRA)}</div>
         ${r.PRABehind ? `<div class="standing-behind">–${fmtInt(r.PRABehind)}</div>`
@@ -2213,9 +2243,14 @@ function renderStandings() {
       </div>
     </div>`;
   }).join('');
+  const sortToggle = `<div class="seg-control">
+    <button class="seg-btn ${standingsSort==='total'?'active':''}" data-action="set-standings-sort" data-sort="total">Total PRA</button>
+    <button class="seg-btn ${standingsSort==='prag'?'active':''}" data-action="set-standings-sort" data-sort="prag">PRA/G</button>
+  </div>`;
   setApp(`<div class="fade-in">
     ${errorBannerHTML(loadErrors)}
     <div class="section-header"><div class="section-title">STANDINGS</div><div class="badge">${localYMD() > SEASON_END ? 'Final · tap for roster' : 'Tap for roster'}</div></div>
+    ${sortToggle}
     ${rows}
     <div class="data-note">PRA = Points + Rebounds + Assists · Starter games only</div>
     <div class="site-foot">
