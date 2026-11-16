@@ -446,6 +446,18 @@
   .st-strip b { font-weight: 600; color: var(--text); }
   .st-strip i { font-style: normal; font-size: 9px; letter-spacing: 0.4px; }
   .st-strip .hl b { color: var(--accent); }
+
+  /* ── ROSTER CONFERENCE CHECKLIST ── */
+  .conf-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+  .conf-card summary { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; list-style: none; }
+  .conf-card summary::-webkit-details-marker { display: none; }
+  .conf-title { flex: 1; font-family: var(--font-display); font-size: 19px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: 0.8px; color: var(--accent); }
+  .conf-count { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); }
+  .conf-card .chev { color: var(--muted); font-size: 18px; transition: transform 0.15s; }
+  .conf-card[open] .chev { transform: rotate(90deg); }
+  .conf-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px; padding: 0 12px 12px; }
+  .conf-item { display: flex; justify-content: space-between; gap: 6px; padding: 7px 8px; border-radius: 6px; background: var(--surface2); color: var(--muted); font-size: 11px; }
+  .conf-item.filled { color: var(--green); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -516,6 +528,7 @@ const DRAFT_SUPP_RANGE = 'A255:G369';  // supplemental (Nov/Dec/Jan/Feb) picks o
 const GAME_LOG_TAB = 'Game Log (locked)';
 const STATUS_SHEET = 'Sickos Standings';   // the header status line is read from this cell
 const STATUS_CELL  = 'A16';
+const MASTER_SCHOOLS_TAB = 'master_schools';   // col A = School, col B = Display Name; both count as D1 names
 const PAST_SEASONS = [
   { label: '2025–26 season site',  url: 'https://pollackelliott.github.io/fantasy-college-basketball/' },
   { label: '2025–26 season sheet', url: 'https://docs.google.com/spreadsheets/d/1SDyVjpmVZuoq3H7J-w4qYrnhE4KgfmPmUPnsmi4JCEg/edit?gid=626431862' },
@@ -961,7 +974,7 @@ const GL = { Team:1, Date:2, Player:3, School:4, Conference:5, Opponent:6,
 const PS = { Team:0, DraftRound:1, Player:2, School:3, Conference:4, GamesPlayed:5,
              TotalPRA:6, PRAG:7, PPG:10, RPG:11, APG:12,
              Points:14, Rebounds:15, Assists:16,
-             GPplusDNP:18, RosterStatus:21 };
+             LastFirst:17, GPplusDNP:18, RosterStatus:21 };
 const PS_SKIP = 0;
 
 // api_standings: no meta row, rows[] = data
@@ -981,6 +994,11 @@ let statsScope     = 'sicko';  // 'sicko' = rostered Sicko games only, 'all' = f
 let standingsSort  = 'total';  // 'total' | 'prag'
 let rosterTeamFilter = myTeam || null;
 let rosterSearch   = '';
+let rosterView     = 'total';   // 'total' | 'pergame'
+let rosterSort     = 'total';   // total|pts|reb|ast|prag|ppg|rpg|apg|az
+let rosterConfOpen = false;     // conference checklist expanded?
+let d1Schools      = null;      // Set of normalized D1 school names (null = filter off)
+let d1Conferences  = [];        // conferences listed in master_schools, if it has a Conference column
 let statSearch     = '';
 let faEnabled      = false;   // has user toggled free agents on?
 let faLoaded       = false;   // has the FA data been fetched yet?
@@ -1131,6 +1149,8 @@ document.addEventListener('click', function(e) {
   else if (action === 'set-txn-type') { txnTypeFilter = el.dataset.type; renderTransactions(); }
   else if (action === 'jump-round')   { jumpToRound(el.dataset.round); }
   else if (action === 'select-my-team') { selectMyTeam(el.dataset.team); }
+  else if (action === 'set-roster-view') { rosterView = el.dataset.view; if (rosterSort !== 'az') rosterSort = rosterView === 'total' ? 'total' : 'prag'; rerenderRoster(); }
+  else if (action === 'set-roster-sort') { rosterSort = el.dataset.sort; rerenderRoster(); }
 });
 
 // Stats team filter (select element)
@@ -1271,6 +1291,7 @@ async function fetchFreeAgents() {
     // 2) agg: free agents only, preserving the existing free-agent toggle behavior
     const agg = {};
     const allAgg = {};
+    const d1Dropped = new Map();   // non-D1 schools skipped, for the console diagnostic
 
     function addToAgg(store, rawStore, aggKey, player, school, conf, teamLabel, statusLabel, g, pra, pts, reb, ast, mins, isDNP) {
       if (!store[aggKey]) {
@@ -1322,6 +1343,8 @@ async function fetchFreeAgents() {
       const ast   = Number(cell(r, GL.Assists))||0;
       const mins  = Number(cell(r, GL.Minutes))||0;
       const isDNP = gameNumber === 'DNP';
+      // Non-league (blank Team) players only count if their school is D1. League players are never hidden.
+      if (!team && !isD1School(school)) { d1Dropped.set(school, (d1Dropped.get(school) || 0) + 1); continue; }
       const g = { ymd, opponent: String(cell(r, GL.Opponent)||'').trim(), gameNumber };
 
       // Per-game label: league rows keep their roster status/team; everything else is a Free Agent.
@@ -1371,6 +1394,7 @@ async function fetchFreeAgents() {
       .filter(p => p.PRAG >= FA_MIN_PRAG);
 
     console.log(`Free agents loaded: ${freeAgents.length} players above ${FA_MIN_PRAG} PRA/G`);
+    if (d1Schools) console.log(`D1 filter dropped ${d1Dropped.size} non-D1 schools:`, [...d1Dropped.keys()].sort().join(', '));
     faLoaded  = true;
     faLoading = false;
     renderStats();
@@ -1379,6 +1403,42 @@ async function fetchFreeAgents() {
     faLoading = false;
     renderStats();
   }
+}
+
+// ─── D1 FILTER (master_schools) ────────────────────────────────────────────────
+function normSchool(s) {
+  return String(s || '').toLowerCase().replace(/['’.]/g, '').replace(/[^a-z0-9&]+/g, ' ').trim();
+}
+// If master_schools could not be read we fail open (hide nobody) rather than hide real players.
+function isD1School(school) {
+  if (!d1Schools) return true;
+  return d1Schools.has(normSchool(school));
+}
+async function fetchMasterSchools() {
+  const url  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(MASTER_SCHOOLS_TAB)}`;
+  const res  = await fetch(url);
+  const text = await res.text();
+  const json = JSON.parse(text.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
+  const cols = (json.table && json.table.cols) || [];
+  const rows = (json.table && json.table.rows) || [];
+  const isHdr = v => /^(school|display name|conference|conf)$/i.test(String(v == null ? '' : v).trim());
+  // Optional: if the tab has a Conference column, use it for the roster checklist.
+  let confIdx = cols.findIndex(c => c && /^conf/i.test(String(c.label || '').trim()));
+  if (confIdx < 0 && rows.length) {
+    confIdx = (rows[0].c || []).findIndex(c => c && /^conf/i.test(String(c.v == null ? '' : c.v).trim()));
+  }
+  const set = new Set(), confs = new Set();
+  rows.forEach(r => {
+    [0, 1].forEach(i => {
+      const v = cell(r, i);
+      if (v != null && !isHdr(v)) { const n = normSchool(v); if (n) set.add(n); }
+    });
+    if (confIdx >= 0) {
+      const c = String(cell(r, confIdx) == null ? '' : cell(r, confIdx)).trim();
+      if (c && !isHdr(c)) confs.add(canonConf(c));
+    }
+  });
+  return { set, confs: [...confs] };
 }
 
 function cell(row, idx) {
@@ -1413,7 +1473,7 @@ async function init() {
   locationMap = {}; awayHomeMap = {};
 
   const errors = [];
-  const [glRes, stRes, psRes, msRes, drRes, txRes, drSuppRes] = await Promise.allSettled([
+  const [glRes, stRes, psRes, msRes, drRes, txRes, drSuppRes, schRes] = await Promise.allSettled([
     fetchLeagueGameLog(),
     gvizFetch('api_standings'),
     gvizFetch('Player Stats (locked)'),
@@ -1421,6 +1481,7 @@ async function init() {
     gvizFetch('Draft'),
     gvizFetch('Transaction Log'),
     gvizFetchRange('Draft', DRAFT_SUPP_RANGE),
+    fetchMasterSchools(),
   ]);
 
   // Game Log (locked)
@@ -1469,7 +1530,7 @@ async function init() {
       playerStats.push({
         Team: String(team),           Player: String(player),
         School: cell(r, PS.School),   Conference: cell(r, PS.Conference),
-        DraftRound: cell(r, PS.DraftRound),
+        DraftRound: cell(r, PS.DraftRound), LastFirst: cell(r, PS.LastFirst),
         RosterStatus: cell(r, PS.RosterStatus),
         GamesPlayed: cell(r, PS.GamesPlayed), GPplusDNP: cell(r, PS.GPplusDNP),
         TotalPRA: cell(r, PS.TotalPRA),       PRAG: cell(r, PS.PRAG),
@@ -1612,6 +1673,14 @@ async function init() {
     console.log(`Loaded ${txnData.length} transactions (dataStart=${dataStart})`);
   } else { txnData = []; console.error('Transactions error:', txRes.reason); }
 
+  if (schRes.status === 'fulfilled' && schRes.value.set.size) {
+    d1Schools = schRes.value.set;
+    d1Conferences = schRes.value.confs;
+  } else {
+    d1Schools = null; d1Conferences = [];
+    errors.push('Schools list failed (D1 filter off)');
+    console.warn('master_schools unavailable; D1 filter is OFF', schRes.reason);
+  }
   loadErrors = errors;
   rosterTeamFilter = allSickos.includes(rosterTeamFilter) ? rosterTeamFilter
                    : allSickos.includes(myTeam)           ? myTeam
@@ -2261,30 +2330,82 @@ function renderStandings() {
 }
 
 // ─── TEAM ROSTER ───────────────────────────────────────────────────────────────
+function canonConf(c) {
+  const t = String(c == null ? '' : c).trim();
+  return /^maac$/i.test(t) ? 'Metro' : t;   // same MAAC/Metro merge as the draft site
+}
+
+// Only active players belong on a roster. A dropped player keeps an Inactive row in the sheet.
 function rosterRowsForTeam(team) {
-  return indexes.playersByTeam.get(team) || [];
+  return (indexes.playersByTeam.get(team) || [])
+    .filter(r => r.RosterStatus === 'Starter' || r.RosterStatus === 'Bench');
+}
+
+const ROSTER_SORT_KEYS = { total:'TotalPRA', pts:'Points', reb:'Rebounds', ast:'Assists',
+                           prag:'PRAG', ppg:'PPG', rpg:'RPG', apg:'APG' };
+
+// "Last, First" from Player Stats column R; falls back to the last word of the name.
+function lastNameKey(r) {
+  const lf = String(r.LastFirst || '').trim();
+  if (lf) return lf.toLowerCase();
+  const parts = String(r.Player || '').trim().split(/\s+/);
+  const last = parts.length > 1 ? parts[parts.length - 1] : (parts[0] || '');
+  return (last + ', ' + (parts.length > 1 ? parts.slice(0, -1).join(' ') : '')).toLowerCase();
+}
+
+function sortRosterRows(rows) {
+  const out = [...rows];
+  if (rosterSort === 'az') {
+    out.sort((a, b) => lastNameKey(a).localeCompare(lastNameKey(b), 'en-US', { sensitivity: 'base' }));
+  } else {
+    const key = ROSTER_SORT_KEYS[rosterSort] || 'TotalPRA';
+    out.sort((a, b) => (Number(b[key]) || 0) - (Number(a[key]) || 0) || String(a.Player).localeCompare(String(b.Player)));
+  }
+  return out;
+}
+
+function rosterControlsHTML() {
+  const isTotals = rosterView === 'total';
+  const sorts = isTotals ? [['total','PRA'],['pts','PTS'],['reb','REB'],['ast','AST']]
+                         : [['prag','PRA/G'],['ppg','PPG'],['rpg','RPG'],['apg','APG']];
+  const btns = sorts.concat([['az','A–Z']]).map(([s, label]) =>
+    `<button class="sort-btn ${rosterSort===s?'active':''}" data-action="set-roster-sort" data-sort="${attr(s)}">${esc(label)}</button>`
+  ).join('');
+  return `<div class="seg-control">
+      <button class="seg-btn ${isTotals?'active':''}" data-action="set-roster-view" data-view="total">Totals</button>
+      <button class="seg-btn ${!isTotals?'active':''}" data-action="set-roster-view" data-view="pergame">Per Game</button>
+    </div>
+    <div class="filter-row" style="margin-bottom:12px"><span class="filter-label">Sort:</span>${btns}</div>`;
 }
 
 function rosterCardsHTML(team, rows) {
   if (!rows.length) {
-    return emptyStateHTML('Roster', 'No players found', `No roster rows were loaded for <strong>${esc(team)}</strong>.`);
+    return emptyStateHTML('Roster', 'No players found', `No active players were found for <strong>${esc(team)}</strong>.`);
   }
+  const isTotals = rosterView === 'total';
+  // Sorted column is orange; with A-Z the headline PRA column stays orange.
+  const hl = k => (rosterSort === k || (rosterSort === 'az' && (k === 'total' || k === 'prag'))) ? ' style="color:var(--accent)"' : '';
 
   return rows.map(r => {
     const sCls = r.RosterStatus==='Starter'?'status-starter':r.RosterStatus==='Bench'?'status-bench':'status-inactive';
+    const cols = isTotals
+      ? `<div class="stat-col"><div class="stat-val"${hl('total')}>${fmtInt(r.TotalPRA)}</div><div class="stat-key">PRA</div></div>
+         <div class="stat-col"><div class="stat-val sm"${hl('pts')}>${fmtInt(r.Points)}</div><div class="stat-key">PTS</div></div>
+         <div class="stat-col"><div class="stat-val sm"${hl('reb')}>${fmtInt(r.Rebounds)}</div><div class="stat-key">REB</div></div>
+         <div class="stat-col"><div class="stat-val sm"${hl('ast')}>${fmtInt(r.Assists)}</div><div class="stat-key">AST</div></div>`
+      : `<div class="stat-col"><div class="stat-val"${hl('prag')}>${num(r.PRAG).toFixed(1)}</div><div class="stat-key">PRA/G</div></div>
+         <div class="stat-col"><div class="stat-val sm"${hl('ppg')}>${num(r.PPG).toFixed(1)}</div><div class="stat-key">PPG</div></div>
+         <div class="stat-col"><div class="stat-val sm"${hl('rpg')}>${num(r.RPG).toFixed(1)}</div><div class="stat-key">RPG</div></div>
+         <div class="stat-col"><div class="stat-val sm"${hl('apg')}>${num(r.APG).toFixed(1)}</div><div class="stat-key">APG</div></div>`;
     return `<div class="stats-card" data-action="view-player" data-team="${attr(team)}" data-player="${attr(r.Player)}">
       <div class="stat-player-info">
         <div class="stat-player-name">${esc(r.Player)}</div>
         <div class="stat-player-meta">${schoolTag(r.School||'')} ${esc(r.Conference||'')}
           <span class="player-status ${sCls}" style="padding:1px 6px;font-size:10px;margin-left:4px">${esc(r.RosterStatus||'')}</span>
         </div>
-        <div class="tap-hint">tap for game log</div>
+        <div class="tap-hint">${num(r.GPplusDNP)} GP · tap for game log</div>
       </div>
-      <div class="stat-nums">
-        <div class="stat-col"><div class="stat-val" style="color:var(--accent)">${fmtInt(r.TotalPRA)}</div><div class="stat-key">PRA</div></div>
-        <div class="stat-col"><div class="stat-val">${num(r.PRAG).toFixed(1)}</div><div class="stat-key">PRA/G</div></div>
-        <div class="stat-col"><div class="stat-val">${num(r.GPplusDNP)}</div><div class="stat-key">GP</div></div>
-      </div>
+      <div class="stat-nums" style="gap:10px">${cols}</div>
     </div>`;
   }).join('');
 }
@@ -2302,6 +2423,37 @@ function rosterSummaryHTML(team, rows) {
   </div>`;
 }
 
+// Every conference we know about: master_schools (if it has a Conference column), plus anything
+// that appears in player/draft data, so a rostered conference can never go missing.
+function rosterConfUniverse() {
+  const set = new Set(d1Conferences.map(canonConf));
+  (playerStats || []).forEach(r => { if (r.Conference) set.add(canonConf(r.Conference)); });
+  (draftData || []).forEach(p => { if (p.conf) set.add(canonConf(p.conf)); });
+  set.delete('');
+  return [...set].sort((a, b) => a.localeCompare(b, 'en-US', { sensitivity: 'base' }));
+}
+
+// rows = this team's ACTIVE players (Starter + Bench only)
+function conferenceChecklistHTML(rows) {
+  const universe = rosterConfUniverse();
+  if (!universe.length) return '';
+  const filled = new Set(rows.map(r => canonConf(r.Conference)).filter(Boolean));
+  const hit = universe.filter(c => filled.has(c)).length;
+  const tiles = universe.map(c => `<div class="conf-item${filled.has(c)?' filled':''}"><span>${esc(c)}</span><strong>${filled.has(c)?'✓':'—'}</strong></div>`).join('');
+  return `<details class="conf-card" id="roster-conf"${rosterConfOpen ? ' open' : ''}>
+    <summary><span class="conf-title">Conferences</span><span class="conf-count">${hit} of ${universe.length}</span><span class="chev">›</span></summary>
+    <div class="conf-grid">${tiles}</div>
+  </details>`;
+}
+// remember whether the checklist is expanded across re-renders
+document.addEventListener('toggle', function(e) {
+  if (e.target && e.target.id === 'roster-conf') rosterConfOpen = e.target.open;
+}, true);
+
+function rerenderRoster() {
+  if (viewingTeam) drawTeamPage(viewingTeam); else renderRoster();
+}
+
 function renderRoster() {
   navStack = [];
   if (!playerStats) { setApp(loadingHTML()); return; }
@@ -2314,8 +2466,8 @@ function renderRoster() {
                      : allSickos.includes(myTeam)           ? myTeam
                      : allSickos[0];
   rosterTeamFilter = selectedTeam;
-  const allRows = rosterRowsForTeam(selectedTeam);
-  const rows = allRows.filter(r => matchesPlayerSearch(r, rosterSearch));
+  const allRows = rosterRowsForTeam(selectedTeam);                                  // active only
+  const rows = sortRosterRows(allRows.filter(r => matchesPlayerSearch(r, rosterSearch)));
   const isMe = selectedTeam === myTeam;
   const teamOpts = allSickos.map(t =>
     `<option value="${attr(t)}" ${selectedTeam===t?'selected':''}>${esc(t)}${t===myTeam?' ★':''}</option>`
@@ -2333,6 +2485,8 @@ function renderRoster() {
     </div>
     <input class="search-input" id="roster-search-input" type="search" placeholder="Search this roster" value="${attr(rosterSearch)}" autocomplete="off">
     ${rosterSummaryHTML(selectedTeam, allRows)}
+    ${conferenceChecklistHTML(allRows)}
+    ${rosterControlsHTML()}
     ${rosterCardsHTML(selectedTeam, rows)}
   </div>`);
 }
@@ -2343,14 +2497,22 @@ function viewTeam(team) {
   const fromDigest = currentTab === 'digest';
   pushNav(() => fromDigest ? renderDigest() : renderStandings());
   pushNav(() => viewTeam(team));
+  drawTeamPage(team);
+}
 
-  const rows = rosterRowsForTeam(team);
+// Draws the team page without touching the back stack (so sort buttons can re-render it safely).
+function drawTeamPage(team) {
+  const fromDigest = currentTab === 'digest';
+  const allRows = rosterRowsForTeam(team);
+  const rows = sortRosterRows(allRows);
   const isMe = team === myTeam;
 
   setApp(`<div class="fade-in">
     <button class="back-btn" data-action="back">← ${fromDigest ? 'Digest' : 'Standings'}</button>
     <div class="section-header"><div class="section-title">${esc(team)}${isMe?' ★':''}</div></div>
-    ${rosterSummaryHTML(team, rows)}
+    ${rosterSummaryHTML(team, allRows)}
+    ${conferenceChecklistHTML(allRows)}
+    ${rosterControlsHTML()}
     ${rosterCardsHTML(team, rows)}
   </div>`);
 }
