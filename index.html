@@ -1765,7 +1765,9 @@ function renderScoreboard(errors) {
   updateDateUI();
   if (!gameLog) { setApp(loadingHTML()); return; }
 
-  const dayRows  = indexes.gameLogByDate.get(viewDate) || [];
+  // The game log keeps rows for dropped players, tagged Inactive. Only Starter/Bench rows belong on the scoreboard.
+  const rawDayRows = indexes.gameLogByDate.get(viewDate) || [];
+  const dayRows    = rawDayRows.filter(r => r.RosterStatus === 'Starter' || r.RosterStatus === 'Bench');
   // Team dropdown: All teams, then you (marked), then everyone else A-Z
   const others   = allSickos.filter(t => t !== myTeam).sort((x, y) => x.localeCompare(y));
   const teamList = ['ALL', ...(myTeam && allSickos.includes(myTeam) ? [myTeam] : []), ...others];
@@ -1800,7 +1802,7 @@ function renderScoreboard(errors) {
 
   // Unplayed games: scheduled games on this date involving active league players that have
   // no rows in the game log yet. Completed games render exactly as before.
-  const loggedKeys = new Set(dayRows.map(r => [r.School||'', r.Opponent||''].sort().join('|||')));
+  const loggedKeys = new Set(rawDayRows.map(r => [r.School||'', r.Opponent||''].sort().join('|||')));
   const upcoming = [];
   (scheduleByDate.get(viewDate) || []).forEach(sg => {
     if (loggedKeys.has([sg.away, sg.home].sort().join('|||'))) return;
